@@ -16,6 +16,7 @@
  	<park:hasTotalSpotNumber rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">50</park:hasTotalSpotNumber>
 	<park:hasOpeningHours rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Mo,Tu,We,Th 09:00-12:00</park:hasOpeningHours>
 	<park:hasOccupancyDetectionType rdf:datatype="http://www.w3.org/2001/XMLSchema#string">balancing</park:hasOccupancyDetectionType>
+    <park:hasRequiredPermit rdf:datatype="http://www.w3.org/2001/XMLSchema#string">fairPermit</park:hasRequiredPermit>
     <park:hasRefParkingSpot rdf:datatype="http://www.w3.org/2001/XMLSchema#string">myParkingSpot1</park:hasRefParkingSpot>
  	<park:hasAvailableSpotNumber>
 		<park:hasValueOfAvailableSpotNumber rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">3</park:hasValueOfAvailableSpotNumber>

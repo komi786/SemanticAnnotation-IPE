@@ -5,7 +5,7 @@
 const mqtt=require('mqtt');
 var config  = require('../configFile');
 var service=require('./notif')
-var host='mqtt://'+mqttBroker+cseid
+var host='mqtt://'+mqttBroker+'/'+csebase
 var options = {
     keepalive: 10,
     clientId: 'SJUMQTT',

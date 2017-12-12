@@ -37,12 +37,13 @@ module.exports.semanticDescription = function (rn,callback)
 };
 module.exports.cnt = function (rn,callback)
 {
-     var http = require('http');
+        var cse='/'+csebase;
+        var http = require('http');
         var str = '';
         var options = {
             host: serverIP,
             port: serverPort,
-            path: cseid+'/'+rn+'?fu=1&ty=3&rcn=4',
+            path: cse+'/'+rn+'?fu=1&ty=3&rcn=4',
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
@@ -67,17 +68,10 @@ module.exports.cnt = function (rn,callback)
 
 module.exports.Resourcesubscription = function (rn, callback)
 {
-        var containerName;
-        var rn1=cseid
-        if (rn.includes(rn1))
-        {
-           containerName=rn;
-        }
-        else
-        {
-           containerName = "/"+rn;
-        }
-    var newtopic=containerName.split(cseid);
+       var cse='/'+csebase;
+        var containerName = "/"+rn;
+
+    var newtopic=containerName.split(cse);
     newtopic=newtopic.join('');
     var request = require('request');
     request.post({
@@ -91,7 +85,6 @@ module.exports.Resourcesubscription = function (rn, callback)
         body:
             JSON.stringify({"m2m:sub":
                 {
-                    "rn": "sub1_monitor",
                     "enc": {
                         "net": [1, 3, 4]
                     },

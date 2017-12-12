@@ -11,15 +11,17 @@ app.get('/',function(req,res)
 });
 app.get('/annotateResource/*',function(req,res)  //Subscribe Target entity and its all children entities for annotation
 {
+    var cse=csebase+'/';
     var rn = req.params[0];
     var tempaeid=rn.split('/');
-    var subcnt=rn.replace('Mobius/','');
+    var subcnt=rn.replace(cse,'');
 
     tempaeid=tempaeid.slice(1,tempaeid.length);
     if (rn.includes('/') )
     {
         global.cnt = tempaeid[0];
-        api.cnt(subcnt, function (response) {
+        api.cnt(subcnt, function (response)
+        {
             var m2mresources = JSON.parse(response)
             if (m2mresources['m2m:dbg'] == undefined)
             {
@@ -27,7 +29,7 @@ app.get('/annotateResource/*',function(req,res)  //Subscribe Target entity and i
                 var uris = m2mresources["m2m:uril"];
                 var resource = uris.toString();
                 var splittogetlast = resource.split(',');
-                var rnparam = (cseid + '/' + rn).toString()
+                var rnparam = (cse + rn).toString()
                 splittogetlast.sort(function (arg1, arg2) {
                     return arg1.length - arg2.length
                 })
@@ -37,6 +39,7 @@ app.get('/annotateResource/*',function(req,res)  //Subscribe Target entity and i
                     var temp = item.toString()
                     var tempRn = '/' + temp;
                     var splititem = temp.split('/');
+                    console.log(temp)
                     service.mobiusMqttsubscription(temp);
                     next();
                 }, function (response, error)
