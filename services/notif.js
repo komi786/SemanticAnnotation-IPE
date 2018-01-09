@@ -26,22 +26,15 @@ var notif=function (message)
         {
             console.log("resourceName=",resourceName)
             var cin=message['pc']['m2m:sgn']['nev']['rep']['m2m:cin'];
-            // var splitResource=resourceName.split('/');
-            // var ln=splitResource.length;
-            // splitResource.splice(4,ln-4,"")
-            // var r = splitResource.filter(function(i){ return i != ""; })
-            // console.log("resourceName=",r)
             var smdprnresource=resourceName
             console.log("smdparent=",smdprnresource)
             var RN=cin['rn'];
             api.semanticDescription(smdprnresource,function (str)
             {
                 var data=JSON.parse(str);
-                console.log("strrr",data)
                 if (data['m2m:smd'] != undefined)
                 {
                     var sd=data['m2m:smd']['dsp'];
-                    console.log('m2m:SD is defined= ',data['m2m:smd']);
                     sd= Base64.decode(sd);
                     var rootparent=message['pc']['m2m:sgn']['sur'];
                     var rootparentsplit=rootparent.split('/');
@@ -155,7 +148,7 @@ var makeDSPTOnStreetParking=function(parent)
     }
     else if (parent.toLowerCase()==("busestimation").toLowerCase())
     {
-        var parkingSpotmodel  = fs.readFileSync('./model/busInformationSystem/BusEstimation.xml', 'utf-8');
+        var parkingSpotmodel  = fs.readFileSync('./model/busInformationSystem/busEstimation.xml', 'utf-8');
         dspt=parkingSpotmodel;
         return dspt;
 
@@ -172,6 +165,12 @@ function ParsingSDFILE(cinObject,rootParent,document) {
     var DOMParser = xmldom.DOMParser;
     var semanticDescriptor = new DOMParser().parseFromString(xmlDoc, "text/xml"); //parsing xml
     var m2mcin = cinObject['con']
+    if(typeof m2mcin=="string")
+    {
+        m2mcin=JSON.parse(JSON.stringify(m2mcin));
+        console.log(m2mcin);
+    }
+
     var resourceName = cinObject.rn.toLowerCase(); //getting out rn
     var resourceValue = cinObject.con; //getting out cin
     if (rootParent.toLowerCase() == "parkingspot") {
@@ -188,9 +187,8 @@ function ParsingSDFILE(cinObject,rootParent,document) {
         if (m2mcin.status != undefined) {
             parseNode(semanticDescriptor.getElementsByTagName("park:hasStatusValue")[0], semanticDescriptor, resourceValue['status'])
         }
-        if (m2mcin.datemodified != undefined) {
-            var isoDateTime = new Date(resourceValue['datemodified'] * 1000);
-            parseNode(semanticDescriptor.getElementsByTagName("park:hasDateModified")[0], semanticDescriptor, isoDateTime)
+        if (m2mcin.dateModified != undefined) {
+            parseNode(semanticDescriptor.getElementsByTagName("park:hasDateModified")[0], semanticDescriptor, resourceValue['dateModified'])
         }
 
         if (m2mcin.category != undefined) {
@@ -253,10 +251,9 @@ function ParsingSDFILE(cinObject,rootParent,document) {
         if (m2mcin.name != undefined) {
             parseNode(semanticDescriptor.getElementsByTagName("park:hasName")[0], semanticDescriptor, resourceValue['name'])
         }
-        if (m2mcin.datemodified != undefined) {
+        if (m2mcin.dateModified != undefined) {
             console.log("datemodified");
-            var isoDateTime = new Date(resourceValue['datemodified'] * 1000);
-            parseNode(semanticDescriptor.getElementsByTagName("park:hasDateModified")[0], semanticDescriptor, isoDateTime)
+            parseNode(semanticDescriptor.getElementsByTagName("park:hasDateModified")[0], semanticDescriptor, resourceValue['dateModified'])
         }
         if (m2mcin['category'] != undefined) {
             console.log("category");
@@ -420,28 +417,28 @@ function ParsingSDFILE(cinObject,rootParent,document) {
 
 
         }
-    if (m2mcin.location != undefined) {
+         if (m2mcin.location != undefined) {
         var ln = resourceValue['location']['coordinates'].length;
         clearNodes("park:hasCoordinates", semanticDescriptor);
         // createNode("park:hasLocation",semanticDescriptor,1,"string","park:OffStreetParking",false)
         // createNode("park:hasLocationType",semanticDescriptor,1,"string","park:hasLocation",true)
-        parseNode(semanticDescriptor.getElementsByTagName("park:hasLocationType")[0], semanticDescriptor, resourceValue['location']['type'])
-        if (typeof resourceValue['location']['coordinates'][0] == "object") {
+            parseNode(semanticDescriptor.getElementsByTagName("park:hasLocationType")[0], semanticDescriptor, resourceValue['location']['type'])
+            if (typeof resourceValue['location']['coordinates'][0] == "object") {
             console.log("coordinatesss")
             for (var i = 0; i < ln; i++) {
                 dictofNodeName = [["park:hasLongitude", "park:hasLatitude"], [true, true]]
                 literaldataTypesNestNodes = ["double", "double"]
                 createNestedNode(dictofNodeName, resourceValue['location']['coordinates'][i], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
 
+              }
             }
-        }
-        else {
+             else {
             dictofNodeName = [["park:hasLongitude", "park:hasLatitude"], [true, true]]
             literaldataTypesNestNodes = ["double", "double"]
             createNestedNode(dictofNodeName, resourceValue['location']['coordinates'], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
-        }
-    }
-    if (m2mcin.availableSpotNumber != undefined) {
+          }
+         }
+        if (m2mcin.availableSpotNumber != undefined) {
         var ln = resourceValue['availableSpotNumber'].length;
         clearNodes("park:hasAvailableSpotNumber", semanticDescriptor);
         var dictofNodeName = [["park:hasValueOfAvailableSpotNumber", "park:hasTimeStampOfAvailableSpotNumber"], [true, true]];
@@ -449,8 +446,8 @@ function ParsingSDFILE(cinObject,rootParent,document) {
         for (var i = 0; i < ln; i++) {
             createNestedNode(dictofNodeName, resourceValue['availableSpotNumber'][i], "park:hasAvailableSpotNumber", "park:OffStreetParking", semanticDescriptor, literaldataTypesNestNodes);
         }
-    }
-    if (m2mcin.contactPoint != undefined) {
+         }
+        if (m2mcin.contactPoint != undefined) {
         if (typeof resourceValue["contactPoint"] == "object") {
             var ln = resourceValue['contactPoint'].length;
             clearNodes("park:hasContactPoint", semanticDescriptor);
@@ -470,16 +467,15 @@ function ParsingSDFILE(cinObject,rootParent,document) {
 
         }
 
-    }
-    if (m2mcin.datemodified != undefined) {
-        var isoDateTime = new Date(resourceValue['datemodified'] * 1000);
-        parseNode(semanticDescriptor.getElementsByTagName("park:hasDateModified")[0], semanticDescriptor, isoDateTime)
-    }
-    if (m2mcin.openingHours != undefined) {
+         }
+        if (m2mcin.dateModified != undefined) {
+        parseNode(semanticDescriptor.getElementsByTagName("park:hasDateModified")[0], semanticDescriptor, resourceValue['dateModified'])
+        }
+        if (m2mcin.openingHours != undefined) {
 
         parseNode(semanticDescriptor.getElementsByTagName("park:hasOpeningHours")[0], semanticDescriptor, resourceValue['openingHours'])
-    }
-    if (m2mcin.category != undefined) {
+        }
+        if (m2mcin.category != undefined) {
         var ln = resourceValue['category'].length;
         clearNodes("park:hasCategory", semanticDescriptor);
         createNode("park:hasCategory", semanticDescriptor, ln, "string", "park:OffStreetParking", true)
@@ -487,8 +483,8 @@ function ParsingSDFILE(cinObject,rootParent,document) {
         for (var i = 0; i < nodes.length; i++) {
             parseNode(nodes[i], semanticDescriptor, resourceValue['category'][i])
         }
-    }
-    if (m2mcin.refParkingSite != undefined) {
+        }
+        if (m2mcin.refParkingSite != undefined) {
         if (typeof resourceValue["refParkingSpot"] == "object") {
             var ln = resourceValue['refParkingSite'].length;
             clearNodes("park:hasRefParkingSite", semanticDescriptor);
@@ -508,9 +504,9 @@ function ParsingSDFILE(cinObject,rootParent,document) {
             var newvalue = 'http://www.semanticweb.org/wise-iot/ontologies/2017/1/parkingOntology.owl#' + m2mcin['refParkingSite'];
             updatenodeAtrribute(offStreetNode, semanticDescriptor, "rdf:about", newvalue);
         }
-    }
-    if (m2mcin.aggregateRating != undefined)
-    {
+        }
+        if (m2mcin.aggregateRating != undefined)
+        {
         if (typeof resourceValue['aggregateRating'] != "object") {
             clearNodes("park:hasAggregatedRating", semanticDescriptor);
             var dictofNodeName = [["park:hasBestRating", "park:hasRatingValue", "park:hasRatingCount"], [true, true, true]];
@@ -528,8 +524,8 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                 createNestedNode(dictofNodeName, resourceValue['aggregateRating'][i], "park:hasAggregatedRating", "park:OffStreetParking", semanticDescriptor, literaldataTypesNestNodes);
             }
         }
-    }
-    if (m2mcin.requiredPermit != undefined) {
+        }
+        if (m2mcin.requiredPermit != undefined) {
         console.log("requiredPermit");
         var ln = resourceValue['requiredPermit'].length;
         clearNodes("park:hasRequiredPermit", semanticDescriptor);
@@ -538,21 +534,21 @@ function ParsingSDFILE(cinObject,rootParent,document) {
         for (var i = 0; i < nodes.length; i++) {
             parseNode(nodes[i], semanticDescriptor, resourceValue['requiredPermit'][i])
         }
+        }
+         var newsmd = semanticDescriptor
+         var XMLSerializer = xmldom.XMLSerializer;
+         var newSD = new XMLSerializer().serializeToString(newsmd);
+         return newSD
     }
-    var newsmd = semanticDescriptor
-    var XMLSerializer = xmldom.XMLSerializer;
-    var newSD = new XMLSerializer().serializeToString(newsmd);
-    return newSD
-}
     else if(rootParent.toLowerCase()=="busstop")
     {
-        if (m2mcin.name != undefined || m2mcin['name'] != "NA") {
+        if (m2mcin.name != undefined ) {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasName")[0], semanticDescriptor, resourceValue['name'])
         }
         if (m2mcin['id'] != undefined) {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasId")[0], semanticDescriptor, resourceValue['id'])
         }
-        if (m2mcin['refBuses'] != undefined || m2mcin['refBuses'] != "NA")
+        if (m2mcin['refBuses'] != undefined )
         {
             console.log("refBuses");
             var ln=resourceValue['refBuses'].length;
@@ -564,10 +560,10 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                 parseNode(nodes[i],semanticDescriptor,resourceValue['refBuses'][i])
             }
         }
-        if (m2mcin['shortId'] != undefined || m2mcin['shortId'] != "NA") {
+        if (m2mcin['shortId'] != undefined ) {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasShortId")[0], semanticDescriptor, resourceValue['shortID'])
         }
-        if (m2mcin['busStopCount'] != undefined || m2mcin['busStopCount'] != "NA")
+        if (m2mcin['busStopCount'] != undefined )
         {
             console.log("busStopCount");
             var ln=resourceValue['busStopCount'].length;
@@ -579,11 +575,11 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                 parseNode(nodes[i],semanticDescriptor,resourceValue['busStopCount'][i])
             }
         }
-        if (m2mcin['location'] != undefined || m2mcin['location'] != "NA") {
+        if (m2mcin['location'] != undefined ) {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLatitude")[0], semanticDescriptor, resourceValue['location'][0])
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLongitude")[0], semanticDescriptor, resourceValue['location'][1])
         }
-        if (m2mcin['address'] != undefined || m2mcin['address'] != "NA")
+        if (m2mcin['address'] != undefined )
         {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasStreetAddress")[0], semanticDescriptor, resourceValue['address']['postalAddress']['streetAddress'])
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasAddressLocality")[0], semanticDescriptor, resourceValue['address']['postalAddress']['addressLocality'])
@@ -591,11 +587,11 @@ function ParsingSDFILE(cinObject,rootParent,document) {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasPostalCode")[0], semanticDescriptor, resourceValue['address']['postalAddress']['postalCode'])
 
         }
-            if (m2mcin['direction'] != undefined || m2mcin['direction'] != "NA")
+            if (m2mcin['direction'] != undefined )
             {
                 parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDirection")[0], semanticDescriptor, resourceValue['direction'])
             }
-            if (m2mcin['refBusLines'] != undefined || m2mcin['refBusLines'] != "NA")
+            if (m2mcin['refBusLines'] != undefined )
             {
                 console.log("refBusLines");
                 var ln=resourceValue['refBusLines'].length;
@@ -607,9 +603,8 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                     parseNode(nodes[i],semanticDescriptor,resourceValue['refBusLines'][i])
                 }
             }
-            if (m2mcin.datemodified != undefined || m2mcin['datemodified'] != "NA") {
-                var isoDateTime = new Date(resourceValue['datemodified'] * 1000);
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDateModified")[0], semanticDescriptor, isoDateTime)
+            if (m2mcin.dateModified != undefined ) {
+                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDateModified")[0], semanticDescriptor, resourceValue['dateModified'])
             }
         var newsmd = semanticDescriptor
         var XMLSerializer = xmldom.XMLSerializer;
@@ -618,82 +613,69 @@ function ParsingSDFILE(cinObject,rootParent,document) {
     }
     else if(rootParent.toLowerCase()=="busline")
     {
-        if (m2mcin['id'] != undefined || m2mcin['id'] != "NA")
+        if (m2mcin['id'] != undefined)
         {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasId")[0], semanticDescriptor, resourceValue['id'])
         }
-        if (m2mcin['refBusStops'] != undefined || m2mcin['refBusStops'] != "NA")
+        if (m2mcin['refBusStops'] != undefined)
         {
             console.log("refBusStops");
-            var ln=resourceValue['refBusStops'].length;
-            clearNodes("smartBus:hasRefBusStops",semanticDescriptor);
-            createNode("smartBus:hasRefBusStops",semanticDescriptor,ln,"string","smartBus:busLine",true)
-            var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRefBusStops");
-            for(var i=0;i< nodes.length;i++)
-            {
-                parseNode(nodes[i],semanticDescriptor,resourceValue['refBusStops'][i])
-            }
+            parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRefBusStops")[0], semanticDescriptor, resourceValue['refBusStops'])
         }
-        if (m2mcin['localId'] != undefined || m2mcin['localId'] != "NA")
+        if (m2mcin['localId'] != undefined )
         {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLocalId")[0], semanticDescriptor, resourceValue['localId'])
         }
-        if (m2mcin['shortId'] != undefined|| m2mcin['shortId'] != "NA") {
+        if (m2mcin['shortId'] != undefined) {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasShortId")[0], semanticDescriptor, resourceValue['shortId'])
         }
-        if (m2mcin['name'] != undefined|| m2mcin['name'] != "NA")
+        if (m2mcin['name'] != undefined)
         {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasName")[0], semanticDescriptor, resourceValue['name'])
         }
-        if (m2mcin['refStartBusStop'] != undefined || m2mcin['refStartBusStop'] != "NA")
+        if (m2mcin['refStartBusStop'] != undefined)
         {
             console.log("refStartBusStop");
             var ln=resourceValue['refStartBusStop'].length;
-            clearNodes("smartBus:hasRefStartBusStop",semanticDescriptor);
-            createNode("smartBus:hasRefStartBusStop",semanticDescriptor,ln,"string","smartBus:busLine",true)
-            var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRefStartBusStop");
-            for(var i=0;i< nodes.length;i++)
-            {
-                parseNode(nodes[i],semanticDescriptor,resourceValue['refStartBusStop'][i])
-            }
+            console.log("refEndBusStop");
+            parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRefStartBusStop")[0], semanticDescriptor, resourceValue['refStartBusStop'])   //StartBusStops is an string composed of string array
         }
-        if (m2mcin['refEndBusStop'] != undefined || m2mcin['refEndBusStop'] != "NA")
+            // clearNodes("smartBus:hasRefStartBusStop",semanticDescriptor);
+            // createNode("smartBus:hasRefStartBusStop",semanticDescriptor,ln,"string","smartBus:busLine",true)
+            // var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRefStartBusStop");
+            // for(var i=0;i< nodes.length;i++)
+            // {
+            //     parseNode(nodes[i],semanticDescriptor,resourceValue['refStartBusStop'][i])
+            // }
+        if (m2mcin['refEndBusStop'] != undefined)
         {
             console.log("refEndBusStop");
-            var ln=resourceValue['refEndBusStop'].length;
-            clearNodes("smartBus:hasRefEndBusStop",semanticDescriptor);
-            createNode("smartBus:hasRefEndBusStop",semanticDescriptor,ln,"string","smartBus:busLine",true)
-            var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRefEndBusStop");
-            for(var i=0;i< nodes.length;i++)
-            {
-                parseNode(nodes[i],semanticDescriptor,resourceValue['refEndBusStop'][i])
-            }
+            parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRefEndBusStop")[0], semanticDescriptor, resourceValue['refEndBusStop']) //refEndBusStop is an string composed of string array
         }
-        if (m2mcin['startTime'] != undefined || m2mcin['startTime'] != "NA")
+        if (m2mcin['startTime'] != undefined )
         {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasStartTime")[0], semanticDescriptor, resourceValue['startTime'])
         }
-        if (m2mcin['endTime'] != undefined || m2mcin['endTime'] != "NA")
+        if (m2mcin['endTime'] != undefined)
         {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasEndTime")[0], semanticDescriptor, resourceValue['endTime'])
         }
-        if (m2mcin['intervalNorm'] != undefined || m2mcin['intervalNorm'] != "NA")
+        if (m2mcin['intervalNorm'] != undefined )
         {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasIntervalNorm")[0], semanticDescriptor, resourceValue['intervalNorm'])
         }
-        if (m2mcin['intervalHoli'] != undefined || m2mcin['intervalHoli'] != "NA")
+        if (m2mcin['intervalHoli'] != undefined )
         {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasIntervalHoli")[0], semanticDescriptor, resourceValue['intervalHoli'])
         }
-        if (m2mcin['intervalPeak'] != undefined || m2mcin['intervalPeak'] != "NA")
+        if (m2mcin['intervalPeak'] != undefined )
         {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasIntervalPeak")[0], semanticDescriptor, resourceValue['intervalPeak'])
         }
 
-        if(m2mcin.datemodified != undefined || m2mcin['datemodified'] != "NA")
+        if(m2mcin.datemodified != undefined )
         {
-            var isoDateTime = new Date(resourceValue['datemodified'] * 1000);
-            parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDateModified")[0], semanticDescriptor, isoDateTime)
+            parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDateModified")[0], semanticDescriptor, resourceValue['dateModified'])
         }
         var newsmd = semanticDescriptor
         var XMLSerializer = xmldom.XMLSerializer;
@@ -702,19 +684,18 @@ function ParsingSDFILE(cinObject,rootParent,document) {
     }
     else if(rootParent.toLowerCase()=="busestimation")
     {
-
-        if (m2mcin['name'] != undefined || m2mcin['name'] != "NA")
+        if (m2mcin['name'] != undefined )
         {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasName")[0], semanticDescriptor, resourceValue['name'])
         }
-        if (m2mcin['id'] != undefined || m2mcin['id'] != "NA")
+        if (m2mcin['id'] != undefined )
         {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasId")[0], semanticDescriptor, resourceValue['id'])
         }
-        if (m2mcin['refBusStops'] != undefined || m2mcin['refBusStops'] != "NA")
+        if (m2mcin['refBusStop'] != undefined )
         {
-            console.log("refBusStops");
-            var ln=resourceValue['refBusStops'].length;
+            console.log("refBusStop");
+            var ln=resourceValue['refBusStop'].length;
             clearNodes("smartBus:hasRefBusStops",semanticDescriptor);
             createNode("smartBus:hasRefBusStops",semanticDescriptor,ln,"string","smartBus:busEstimation",true)
             var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRefBusStops");
@@ -723,11 +704,11 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                 parseNode(nodes[i],semanticDescriptor,resourceValue['refBusStops'][i])
             }
         }
-        if (m2mcin['refBusLine'] != undefined || m2mcin['refBusLine'] != "NA")
+        if (m2mcin['refBusLine'] != undefined )
         {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRefBusLine")[0], semanticDescriptor, resourceValue['refBusLine'])
         }
-        if (m2mcin['remainingDistances'] != undefined || m2mcin['remainingDistances'] != "NA")
+        if (m2mcin['remainingDistances'] != undefined )
         {
             console.log("remainingDistances");
             var ln=resourceValue['remainingDistances'].length;
@@ -740,7 +721,7 @@ function ParsingSDFILE(cinObject,rootParent,document) {
             }
         }
 
-        if (m2mcin['remainingTimes'] != undefined || m2mcin['remainingTimes'] != "NA")
+        if (m2mcin['remainingTimes'] != undefined )
         {
             console.log("remainingTimes");
             var ln=resourceValue['remainingTimes'].length;
@@ -752,7 +733,7 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                 parseNode(nodes[i],semanticDescriptor,resourceValue['remainingTimes'][i])
             }
         }
-        if (m2mcin['destinationBusLines'] != undefined || m2mcin['destinationBusLines'] != "NA")
+        if (m2mcin['destinationBusLines'] != undefined )
         {
             console.log("destinationBusLines");
             var ln=resourceValue['destinationBusLines'].length;
@@ -764,25 +745,24 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                 parseNode(nodes[i],semanticDescriptor,resourceValue['destinationBusLines'][i])
             }
         }
-        if (m2mcin['shortId'] != undefined || m2mcin['shortId'] != "NA")
+        if (m2mcin['shortId'] != undefined )
         {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasShortId")[0], semanticDescriptor, resourceValue['shortId'])
         }
-        if (m2mcin['remainingStations'] != undefined || m2mcin['remainingStations'] != "NA") {
+        if (m2mcin['remainingStations'] != undefined ) {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRemainingStations")[0], semanticDescriptor, resourceValue['remainingStations'])
         }
-        if (m2mcin['companyName'] != undefined || m2mcin['companyName'] != "NA") {
+        if (m2mcin['companyName'] != undefined ) {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasCompanyName")[0], semanticDescriptor, resourceValue['companyName'])
         }
-        if (m2mcin['location'] != undefined || m2mcin['location'] != "NA" )
+        if (m2mcin['location'] != undefined )
         {
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLatitude")[0], semanticDescriptor, resourceValue['location'][0])
             parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLongitude")[0], semanticDescriptor, resourceValue['location'][1])
         }
-        if (m2mcin['datemodified'] != undefined || m2mcin['datemodified'] != "NA")
+        if (m2mcin['dateModified'] != undefined )
         {
-            var isoDateTime = new Date(resourceValue['datemodified'] * 1000);
-            parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDateModified")[0], semanticDescriptor, isoDateTime)
+            parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDateModified")[0], semanticDescriptor, resourceValue['dateModified'])
         }
         var newsmd = semanticDescriptor
         var XMLSerializer = xmldom.XMLSerializer;
@@ -794,6 +774,15 @@ function ParsingSDFILE(cinObject,rootParent,document) {
         return xmlDoc;
     }
 
+}
+function testJSON(text){
+    try{
+        JSON.parse(text);
+        return true;
+    }
+    catch (error){
+        return false;
+    }
 }
 var dictToArray=function (obj,keyflag) {
     var arr=[];
@@ -815,11 +804,10 @@ var parseNode=function(stem,xmlDoc,resourceValue)
     var  node=stem;
     if (node)
     {
-       // console.log('childNodes--- '+node.childNodes.length+'value' +resourceValue);
+
         var textNode = node.childNodes[0];
         if (!textNode)
         {
-            // console.log("creating textNode for ",resourceValue)
             textNode = xmlDoc.createTextNode("");
             node.appendChild(textNode);
         }
@@ -923,7 +911,7 @@ var updatenodeAtrribute=function (stem,xmlDoc,attribute,newValue)
         att.value = newValue                           // Set the value of the class attribute
         node.setAttributeNode(att)
         var att=node.getAttribute(attribute)
-        console.log("Attribute Value=",att)
+        //console.log("Attribute Value=",att)
         // if (!textNode)
         // {
         //     textNode = xmlDoc.createTextNode("");
@@ -1078,11 +1066,10 @@ var splitResourceArray=function (array) {
 }
 var mobiusMqttsubscribe=function (temp)
 {
-
     api.checkResourcesubscription(temp, function (aes)
     {
         var AESattributes = JSON.parse(aes);
-        if (AESattributes['m2m:dbg'] == "resource does not exist")
+        if (AESattributes['m2m:uril'].length==0 )
         {
             api.Resourcesubscription(temp, function (sub)
             {
@@ -1092,10 +1079,10 @@ var mobiusMqttsubscribe=function (temp)
         }
         else
         {
+            console.log("subscription=",AESattributes);
             mqtt.subscibeTopic('/'+temp);
         }
     })
-
 }
 module.exports.mobiusMqttsubscription=mobiusMqttsubscribe
 module.exports.splitArray=splitResourceArray

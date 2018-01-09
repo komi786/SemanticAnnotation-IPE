@@ -5,7 +5,7 @@
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:smartBus="http://www.semanticweb.org/wise-iot/ontologies/2017/1/smartBus.owl/"
     xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
-  <smartBus: rdf:about="http://www.semanticweb.org/wise-iot/ontologies/2017/1/smartBus.owl#bussanBusInfo">
+  <smartBus:busEstimation rdf:about="http://www.semanticweb.org/wise-iot/ontologies/2017/1/smartBus.owl#bussanBusInfo">
 	<smartBus:hasId rdf:datatype="http://www.w3.org/2001/XMLSchema#string">urn:entity:busan:transport:bus:busId:[busLineId]</smartBus:hasId>
 	<smartBus:hasRefBusStops rdf:datatype="http://www.w3.org/2001/XMLSchema#string">[ "urn:entity:busan:transport:bus:busStop:[busStopId]" ]</smartBus:hasRefBusStops>
 	<smartBus:hasRefBusLine rdf:datatype="http://www.w3.org/2001/XMLSchema#string">[ "urn:entity:santander:transport:tus:busLine:[busLineId]" ]</smartBus:hasRefBusLine>

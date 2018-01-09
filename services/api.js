@@ -69,12 +69,12 @@ module.exports.cnt = function (rn,callback)
 module.exports.Resourcesubscription = function (rn, callback)
 {
        var cse='/'+csebase;
-        var containerName = "/"+rn;
-
-    var newtopic=containerName.split(cse);
-    newtopic=newtopic.join('');
-    var request = require('request');
-    request.post({
+       var containerName = "/"+rn;
+       var newtopic=containerName.split(cse);
+       newtopic=newtopic.join('');
+        var request = require('request');
+        console.log('http://'+serverIP+':'+serverPort+containerName)
+        request.post({
         headers:  {
             'Accept': 'application/json',
             'X-M2M-RI': '12345',
@@ -224,7 +224,8 @@ module.exports.checkResourceAnnotation = function (rn, callback)
 };
 module.exports.checkResourcesubscription = function (rn, callback)
 {
-    var containerName = '/'+rn.replace(" ",'')+"/sub1_monitor";
+    var containerName = '/'+rn.replace(" ",'')+"?fu=1&ty=23&rcn=4";
+    console.log(containerName)
     var AEs='';
     var http = require('http');
     var options = {
@@ -240,7 +241,8 @@ module.exports.checkResourcesubscription = function (rn, callback)
         }
     };
 
-    var reqGet = http.request(options, function(response) {
+    var reqGet = http.request(options, function(response)
+    {
         response.on('data', function(d)
         {
             AEs+=d;
