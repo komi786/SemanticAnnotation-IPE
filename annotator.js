@@ -37,15 +37,18 @@ app.get('/annotateResource/*',function(req,res)  //Subscribe Target entity and i
                 asyncLoop.eachSeries(splittogetlast, function (item, next)
                 {
                     var temp = item.toString()
-                    var tempRn = '/' + temp;
                     var splititem = temp.split('/');
-                    console.log(temp)
                     service.mobiusMqttsubscription(temp);
+
                     next();
                 }, function (response, error)
                 {
                     res.send(m2mresources)
                 })
+            }
+            else
+            {
+                res.send(m2mresources)
             }
         })
     }

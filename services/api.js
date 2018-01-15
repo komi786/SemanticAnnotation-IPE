@@ -64,6 +64,8 @@ module.exports.cnt = function (rn,callback)
         req.end();
 };
 
+
+
 //------***Resource Subscription in oneM2M by Create subscribedToBe Resource of Given Resource***------
 
 module.exports.Resourcesubscription = function (rn, callback)
@@ -71,9 +73,8 @@ module.exports.Resourcesubscription = function (rn, callback)
        var cse='/'+csebase;
        var containerName = "/"+rn;
        var newtopic=containerName.split(cse);
-       newtopic=newtopic.join('');
+        newtopic=newtopic.join('');
         var request = require('request');
-        console.log('http://'+serverIP+':'+serverPort+containerName)
         request.post({
         headers:  {
             'Accept': 'application/json',
@@ -117,7 +118,7 @@ module.exports.ResourceAnnotation = function (req, callback)
                 {
                     "or" : "http://your.ref.address",
                     "dcrp" : "application/rdf+xml:1",
-                    "dsp":req['dspt'],
+                    "dsp":req['dsp'],
                     "rn":smd
                 }
             })
@@ -224,7 +225,7 @@ module.exports.checkResourceAnnotation = function (rn, callback)
 };
 module.exports.checkResourcesubscription = function (rn, callback)
 {
-    var containerName = '/'+rn.replace(" ",'')+"?fu=1&ty=23&rcn=4";
+    var containerName = '/'+rn.replace(" ",'')+"?fu=2&ty=23&rcn=4";
     console.log(containerName)
     var AEs='';
     var http = require('http');
@@ -249,6 +250,7 @@ module.exports.checkResourcesubscription = function (rn, callback)
         });
         response.on('end', function()
         {
+            AEs=JSON.parse(AEs)
             callback(AEs);
         });
 
@@ -271,6 +273,36 @@ module.exports.doTopicSubscription=function (cnt)
     mqttclient.subscibeTopic(cnt);
 
 }
+//Latest contentInstance Retrival
+module.exports.latestcin = function (rn,callback)
+{
+    var cse='/'+csebase;
+    var http = require('http');
+    var str = '';
+    var options = {
+        host: serverIP,
+        port: serverPort,
+        path: rn+'/latest',
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-M2M-RI': '12345',
+            'X-M2M-Origin': 'SOrigin'
+
+        }
+    };
+    var req = http.request(options, function (res) {
+
+        res.on('data', function (body) {
+            str += body;
+        });
+        res.on('end', function () {
+            str=JSON.parse(str)
+            return callback(str);
+        });
+    });
+    req.end();
+};
 
 
 

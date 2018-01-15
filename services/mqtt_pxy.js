@@ -29,7 +29,8 @@ client.on('connect', function ()
 });
 var mqttsub= function (topic)
 {
-    client.subscribe('/oneM2M/req'+topic+"/json")
+   console.log("subscription of Resource=",'/oneM2M/req/'+cseid+topic+"/json");
+   client.subscribe('/oneM2M/req'+cseid+topic+"/json")
 }
 client.on('message', function (topic, message)
 {
