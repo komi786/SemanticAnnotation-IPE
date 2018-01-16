@@ -90,7 +90,8 @@ module.exports.Resourcesubscription = function (rn, callback)
                         "net": [1, 3, 4]
                     },
                     "nu":["mqtt://"+mqttBroker+newtopic+"?ct=json"],
-                    "nct": 2
+                    "nct": 2,
+                    "rn":sub
                 }
             })
 
@@ -128,7 +129,7 @@ module.exports.ResourceAnnotation = function (req, callback)
         callback(body);
     });
 };
-module.exports.checkExistanceStatusInfo = function (rn, callback)
+module.exports.checkcontainerExist = function (rn, callback)
 {
     var containerName = rn
     var AEs='';
@@ -150,7 +151,9 @@ module.exports.checkExistanceStatusInfo = function (rn, callback)
         {
             AEs+=d;
         });
-        response.on('end', function() {
+        response.on('end', function()
+        {
+            AEs=JSON.parse(AEs)
             return callback(AEs);
         });
 
@@ -225,7 +228,7 @@ module.exports.checkResourceAnnotation = function (rn, callback)
 };
 module.exports.checkResourcesubscription = function (rn, callback)
 {
-    var containerName = '/'+rn.replace(" ",'')+"?fu=2&ty=23&rcn=4";
+    var containerName = '/'+rn.replace(" ",'')+'/'+sub
     console.log(containerName)
     var AEs='';
     var http = require('http');
