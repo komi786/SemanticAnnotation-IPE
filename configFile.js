@@ -3,10 +3,10 @@
  */
 
 //--Mendatory Setting
-global.serverIP="192.168.1.101"
+global.serverIP="192.168.0.182"
     //"203.253.128.161";
 global.serverPort=7579;  //
-global.mqttBroker="192.168.1.101";
+global.mqttBroker="192.168.0.182";
 global.cnt= "";  //
 global.cseid="/Mobius";  //CSE Id
 global.csebase="Mobius";  //CSE name
