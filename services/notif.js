@@ -1425,12 +1425,12 @@ var mobiusMqttsubscribe=function (rn)
             api.Resourcesubscription(rn, function (sub)
             {
                 console.log('sub='+sub);
-               //mqtt.subscibeTopic();
+               //mqtt.subscribeTopic();
             })
         }
         else
         {
-             //mqtt.subscibeTopic();
+             //mqtt.subscribeTopic();
         }
     })
 }

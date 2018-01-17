@@ -7,13 +7,14 @@ var config  = require('../configFile');
 var service=require('./notif')
 var host='mqtt://'+mqttBroker;
 var client = mqtt.connect(host);
+var mqttChannel='/oneM2M/req/' + cseid.replace(/^\//,'') + '/' + mqtt_topic + '/json';
 client.on('connect', function ()
 {
     console.log('--pxy_mqtt--',mqttBroker);
 });
 var mqttsub= function ()
 {
-    client.subscribe('/oneM2M/req'+cseid+'/'+mqtt_topic+'/json');
+    client.subscribe(mqttChannel);
 
 }
 client.on('message', function (topic,message)
@@ -24,4 +25,4 @@ client.on('message', function (topic,message)
     var data = JSON.parse(message);
     service.notificationHandling(data)  //Parse Payload
 });
-module.exports.subscibeTopic=mqttsub;
+module.exports.subscribeTopic=mqttsub;
