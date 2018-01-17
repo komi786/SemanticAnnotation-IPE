@@ -13,7 +13,7 @@ client.on('connect', function ()
 });
 var mqttsub= function ()
 {
-    client.subscribe('/oneM2M/req'+cseid+'/'+mqtt_topic+'/json');
+    client.subscribe('/oneM2M/req/'+cseid+'/'+mqtt_topic+'/json');
 
 }
 client.on('message', function (topic,message)
