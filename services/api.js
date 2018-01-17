@@ -270,7 +270,7 @@ module.exports.doTopicSubscription=function ()
     // {
     //     cnt=cnt.split("+").join("/");
     // }
-    mqttclient.subscibeTopic();
+    mqttclient.subscribeTopic();
 
 }
 //Latest contentInstance Retrival
