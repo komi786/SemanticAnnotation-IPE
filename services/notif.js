@@ -4,24 +4,20 @@
 
 var api=require('./api');
 var mqtt=require('./mqtt_pxy');
+var util=require('util');
 var dataStructureFile=require('./dataStructure');
-var notif=function (message)
+var notif=function (parentResourcePath)
 {
-    if (message['pc']['m2m:sgn'])
+    var notificationContent=parentResourcePath['pc']['m2m:sgn'];
+    if (notificationContent && notificationContent['net']==3)
     {
-       console.log("Notification =",message['pc']['m2m:sgn'])
-        var resourcePath=message['pc']['m2m:sgn']['sur'];
-        var resourceName=getNewResourcePath(resourcePath);
-        if (message['pc']['m2m:sgn']['nev']['rep']['m2m:cnt'])   //Notif--New container have been created--Subscribe CNT--Make MQTT subscription
+        console.log("Notification =",notificationContent);
+        if (notificationContent['nev']['rep']['m2m:cnt'])   //Notif--New container have been created--Subscribe CNT--Make MQTT subscription
         {
-            var newcnt = message['pc']['m2m:sgn']['nev']['rep']['m2m:cnt'];
+            var newcnt = notificationContent['nev']['rep']['m2m:cnt'];
             var fullresourceName = resourceName + '/' + newcnt['rn'];
-            var form = {'cnt': fullresourceName};
-            var dict={'rn':fullresourceName,'prn':resourceName}
-
             api.checkcontainerExist(fullresourceName,function (cnt)
             {
-
                 if(cnt["m2m:cnt"])
                 {
                     console.log('Create container notification',fullresourceName);
@@ -34,35 +30,35 @@ var notif=function (message)
             })
 
         }
-        else if(message['pc']['m2m:sgn']['nev']['rep']['m2m:cin'])                //Notif--New contentInstance have been created. parse SMD and Update
+        else if(notificationContent['nev']['rep']['m2m:cin'])                //Notif--New contentInstance have been created. parse SMD and Update
         {
 
-            var cin=message['pc']['m2m:sgn']['nev']['rep']['m2m:cin'];
-            var rootparent=message['pc']['m2m:sgn']['sur']
-            var rootparentsplit=rootparent.split('/');
-            var subscriptionresourceName='/'+rootparentsplit[rootparentsplit.length-2];
-            rootparent=rootparent.replace('/'+rootparentsplit[rootparentsplit.length-1],'');
-            subscriptionresourceName=subscriptionresourceName.replace('/','');
-            var prn=retrivalParentResourceURI(rootparent);
-            var smdminus='/'+rootparentsplit[rootparentsplit.length-2];
-            var smdURI=rootparent.replace(smdminus,'');
-            smdminus='/'+rootparentsplit[rootparentsplit.length-1];
-            rootparent=rootparent.replace(smdminus,'');
+            var newcin=notificationContent['nev']['rep']['m2m:cin'];
+            var resourceNameSplit=resourceName.split('/');
+            var subscriptionresourceName=resourceNameSplit[resourceNameSplit.length-1];
+            var prn=resourceNameSplit[3];
+            var parentResourcePath=getParentResourcePath(resourceName);
+            // var rootparent=parentResourcePath['pc']['m2m:sgn']['sur']
+            // var rootparentsplit=rootparent.split('/');
+            // var subscriptionresourceName='/'+rootparentsplit[rootparentsplit.length-2];
+            // rootparent=rootparent.replace('/'+rootparentsplit[rootparentsplit.length-1],'');
+            // subscriptionresourceName=subscriptionresourceName.replace('/','');
+            // var prn=retrivalParentResourceURI(rootparent);
+            // var smdminus='/'+rootparentsplit[rootparentsplit.length-2];
+            // var smdURI=rootparent.replace(smdminus,'');
+            // smdminus='/'+rootparentsplit[rootparentsplit.length-1];
+            // rootparent=rootparent.replace(smdminus,'');
             if(prn.toLowerCase()=="parkingspot")
             {
                 if (subscriptionresourceName=="info")
                 {
-
-                    createDescription(cin,prn,smdURI);
-
-                    var statusrootparent=rootparent.replace(subscriptionresourceName,'status');
+                    createDescription(newcin,prn,parentResourcePath);
+                    var statusrootparent=parentResourcePath+'/status';
                     api.latestcin(statusrootparent,function (res)
                     {
                         if(res['m2m:cin'])
                         {
-                          //
-
-                            createDescription(res['m2m:cin'],prn,smdURI)
+                            createDescription(res['m2m:cin'],prn,parentResourcePath)
                         }
 
 
@@ -70,7 +66,7 @@ var notif=function (message)
                 }
                 else if(subscriptionresourceName=="status")
                 {
-                    createDescription(cin,prn,smdURI);
+                    createDescription(newcin,prn,parentResourcePath);
 
                     var inforootparent=rootparent.replace(subscriptionresourceName,'info');
 
@@ -92,12 +88,12 @@ var notif=function (message)
                 if (subscriptionresourceName=="info")
                 {
 
-                    createDescription(cin,prn,smdURI);
+                    createDescription(newcin,prn,parentResourcePath);
                     var availableSpotNumrootparent=rootparent.replace(subscriptionresourceName,'availableSpotNum');
                     api.latestcin(availableSpotNumrootparent,function (res)
                     {
                         if(res['m2m:dbg']==undefined) {
-                            createDescription(res['m2m:cin'], prn,smdURI)
+                            createDescription(res['m2m:cin'], prn,parentResourcePath)
                         }
                     })
                     var aggregateRatingrootparent=rootparent.replace(subscriptionresourceName,'aggregateRating');
@@ -111,44 +107,44 @@ var notif=function (message)
                 }
                 else if(subscriptionresourceName=="availableSpotNum")
                 {
-                    // var parentResource=retrivalParentResourceURI(message['pc']['m2m:sgn']['sur'])
-                    createDescription(cin,prn,smdURI);
+                    // var parentResource=retrivalParentResourceURI(parentResourcePath['pc']['m2m:sgn']['sur'])
+                    createDescription(newcin,prn,parentResourcePath);
                     var inforootparent=rootparent.replace(subscriptionresourceName,'info');
                     api.latestcin(inforootparent,function (res)
                     {
                         if(res['m2m:dbg']==undefined) {
-                            createDescription(res['m2m:cin'], prn,smdURI)
+                            createDescription(res['m2m:cin'], prn,parentResourcePath)
                         }
                     })
                     var aggregateRatingrootparent=rootparent.replace(subscriptionresourceName,'aggregateRating');
                     api.latestcin(availableSpotNumrootparent,function (res)
                     {
                         if(res['m2m:dbg']==undefined) {
-                            createDescription(res['m2m:cin'], prn,smdURI)
+                            createDescription(res['m2m:cin'], prn,parentResourcePath)
                         }
                     })
                 }
                 else if(subscriptionresourceName=="aggregateRating")
                 {
-                    createDescription(cin,prn,smdURI);
+                    createDescription(newcin,prn,parentResourcePath);
                     var inforootparent=rootparent.replace(subscriptionresourceName,'info');
                     api.latestcin(inforootparent,function (res)
                     {
                         if(res['m2m:dbg']==undefined) {
-                            createDescription(res['m2m:cin'], prn,smdURI)
+                            createDescription(res['m2m:cin'], prn,parentResourcePath)
                         }
                     })
                     var availableSpotNumrootparent=rootparent.replace(subscriptionresourceName,'availableSpotNum');
                     api.latestcin(availableSpotNumrootparent,function (res)
                     {
                         if(res['m2m:dbg']==undefined) {
-                            createDescription(res['m2m:cin'], prn,smdURI)
+                            createDescription(res['m2m:cin'], prn,parentResourcePath)
                         }
                     })
                 }
                 else
                 {
-                    createDescription(cin,prn,smdURI)
+                    createDescription(newcin,prn,parentResourcePath)
                 }
             }
             else if(prn.toLowerCase()=="onstreetparking")
@@ -156,28 +152,27 @@ var notif=function (message)
                 if (subscriptionresourceName=="info")
                 {
 
-                    createDescription(cin,prn,rootparent);
+                    createDescription(newcin,prn,rootparent);
                     var availableSpotNumrootparent=rootparent.replace(subscriptionresourceName,'availableSpotNum');
                     api.latestcin(availableSpotNumrootparent,function (res)
                     {
                         if(res['m2m:dbg']==undefined)
                         {
 
-                            createDescription(res['m2m:cin'],prn,smdURI)
+                            createDescription(res['m2m:cin'],prn,parentResourcePath)
                         }
                     })
 
                 }
                 else if(subscriptionresourceName=="availableSpotNum")
                 {
-                    // var parentResource=retrivalParentResourceURI(message['pc']['m2m:sgn']['sur'])
-                    createDescription(cin,prn,rootparent);
+                    createDescription(newcin,prn,parentResourcePath);
                     var inforootparent=rootparent.replace(subscriptionresourceName,'info');
                     api.latestcin(inforootparent,function (res)
                     {
                         if(res['m2m:dbg']==undefined) {
 
-                            createDescription(res['m2m:cin'], prn,smdURI)
+                            createDescription(res['m2m:cin'], prn,parentResourcePath)
                         }
                     })
                 }
@@ -185,27 +180,6 @@ var notif=function (message)
 
 
         }
-        // else if(message['pc']['m2m:sgn']['nev']['rep']['m2m:sub'])
-        // { //since CSE returns the latest subscription resource rn in case of more than one subscription rather then particular
-            //deleted m2m:sub rn---It is not possible to check whether rn exist and need to subscription of container parent or not)
-        //     console.log(resourcePath);
-        //     // api.checkcontainerExist(fullresourceName,function (cnt)
-        //     // {
-        //     //
-        //     //     if(cnt["m2m:cnt"])
-        //     //     {
-        //     //         console.log('Create container notification',fullresourceName);
-        //     //         api.Resourcesubscription(fullresourceName, function (response)
-        //     //         {
-        //     //             api.doTopicSubscription(fullresourceName)
-        //     //         })
-        //     //     }
-        //     //
-        //     // })
-        //     var res=resourceName.split("/").join("+");
-        //     api.doTopicSubscription(res)
-        //     return
-        // }
 
     }
 }
@@ -394,8 +368,9 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                 createNode("park:hasLocation", semanticDescriptor, 1, "string", "park:ParkingSpot", false)
                 createNode("park:hasLocationType", semanticDescriptor, 1, "string", "park:hasLocation", true)
                 parseNode(semanticDescriptor.getElementsByTagName("park:hasLocationType")[0], semanticDescriptor, m2mcin['location']['type'])
-                if (typeof m2mcin['location']['coordinates'][0] === "object") {
-                    for (var i = 0; i < ln; i++) {
+                if (  typeof m2mcin['location']['coordinates'][0] === "object") {
+                    for (var i = 0; i < ln; i++)
+                    {
                         dictofNodeName = [["park:hasLongitude", "park:hasLatitude"], [true, true]]
                         literaldataTypesNestNodes = ["double", "double"]
                         createNestedNode(dictofNodeName, m2mcin['location']['coordinates'][i], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
@@ -455,25 +430,38 @@ function ParsingSDFILE(cinObject,rootParent,document) {
             if (m2mcin.dateModified != undefined) {
                 parseNode(semanticDescriptor.getElementsByTagName("park:hasDateModified")[0], semanticDescriptor, m2mcin['dateModified'])
             }
-            if (m2mcin['category'] != undefined) {
+            if (m2mcin['category'] != undefined)
+            {
+
                 var ln = m2mcin['category'].length;
-                if (ln != semanticDescriptor.getElementsByTagName("park:hasCategory").length) {
+               var cat=m2mcin['category']
+                if (ln != semanticDescriptor.getElementsByTagName("park:hasCategory").length)
+                {
                     clearNodes("park:hasCategory", semanticDescriptor);
                     createNode("park:hasCategory", semanticDescriptor, ln, "string", "park:OnStreetParking", true)
                 }
                 var nodes = semanticDescriptor.getElementsByTagName("park:hasCategory");
-                for (var i = 0; i < ln; i++) {
+                for (var i = 0; i <ln; i++)
+                {
 
-                    parseNode(nodes[i], semanticDescriptor, m2mcin['category'][i])
+
+                    parseNode(nodes[i], semanticDescriptor, cat[i])
+
                 }
             }
-            if (m2mcin.areBordersMarked != undefined) {
+            if (m2mcin.areBordersMarked != undefined)
+            {
+                console.log('areBordersMarked');
                 parseNode(semanticDescriptor.getElementsByTagName("park:hasAreBordersMarked")[0], semanticDescriptor, m2mcin['areBordersMarked'])
             }
-            if (m2mcin.allowedVehicleType != undefined) {
+            if (m2mcin.allowedVehicleType != undefined)
+            {
+                console.log('allowedVehicleType');
                 parseNode(semanticDescriptor.getElementsByTagName("park:hasAllowedVehicleType")[0], semanticDescriptor, m2mcin['allowedVehicleType'])
             }
-            if (m2mcin.requiredPermit != undefined) {
+            if (m2mcin.requiredPermit != undefined)
+            {
+                console.log('requiredPermit');
                 var ln = m2mcin['requiredPermit'].length;
                 clearNodes("park:hasRequiredPermit", semanticDescriptor);
                 createNode("park:hasRequiredPermit", semanticDescriptor, ln, "string", "park:OnStreetParking", true)
@@ -484,6 +472,7 @@ function ParsingSDFILE(cinObject,rootParent,document) {
             }
             if (m2mcin.chargeType != undefined)
             {
+                console.log('chargeType');
                 var ln = m2mcin['chargeType'].length;
                 clearNodes("park:hasChargeType", semanticDescriptor);
                 createNode("park:hasChargeType", semanticDescriptor, ln, "string", "park:OnStreetParking", true)
@@ -494,12 +483,16 @@ function ParsingSDFILE(cinObject,rootParent,document) {
             }
             if (m2mcin.occupancyDetectionType != undefined) {
 
+                console.log('occupancyDetectionType');
                 parseNode(semanticDescriptor.getElementsByTagName("park:hasOccupancyDetectionType")[0], semanticDescriptor, m2mcin['occupancyDetectionType'])
             }
             if (m2mcin.totalSpotNumber != undefined) {
+                console.log('totalSpotNumber');
                 parseNode(semanticDescriptor.getElementsByTagName("park:hasTotalSpotNumber")[0], semanticDescriptor, m2mcin['totalSpotNumber'])
             }
-            if (m2mcin.refParkingSpot != undefined) {
+            if (m2mcin.refParkingSpot != undefined)
+            {
+                console.log('refParkingSpot');
                 var ln = m2mcin['refParkingSpot'].length;
                 clearNodes("park:hasRefParkingSpot", semanticDescriptor);
                 createNode("park:hasRefParkingSpot", semanticDescriptor, ln, "string", "park:onStreetParking", true)
@@ -514,11 +507,13 @@ function ParsingSDFILE(cinObject,rootParent,document) {
 
             }
             if (m2mcin.availableSpotNumber != undefined) {
+                console.log('availableSpotNumber');
                 var ln = m2mcin['availableSpotNumber'].length;
                 clearNodes("park:hasAvailableSpotNumber", semanticDescriptor);
                 var dictofNodeName = [["park:hasValueOfAvailableSpotNumber", "park:hasTimeStampOfAvailableSpotNumber"], [true, true]];
                 var literaldataTypesNestNodes = ["string", "string"]
-                if (typeof m2mcin['availableSpotNumber'][0] === "object") {
+                if (typeof m2mcin['availableSpotNumber'][0] === "object")
+                {
                     for (var i = 0; i < ln; i++) {
                         createNestedNode(dictofNodeName, m2mcin['availableSpotNumber'][i], "park:hasAvailableSpotNumber", "park:OnStreetParking", semanticDescriptor, literaldataTypesNestNodes);
                     }
@@ -531,22 +526,29 @@ function ParsingSDFILE(cinObject,rootParent,document) {
             if (m2mcin.permitActiveHours != undefined)                         //make rdf/xml class type for permitActiveHours sensor information
             {
 
+
                 var ln = m2mcin['permitActiveHours'].length;
                 clearNodes("park:hasPermiteActiveHours", semanticDescriptor);
                 var dictofNodeName = [["park:hasValueOfAvailableSpotNumber", "park:hasTimeStampOfAvailableSpotNumber"], [true, true]];
                 var literaldataTypesNestNodes = ["string", "string"]
-                if (typeof m2mcin['permitActiveHours'][0] === "object") {
-                    for (var i = 0; i < ln; i++) {
-                        var array = dictToArray(m2mcin['permitActiveHours'][i], true);
-                        createNestedNode(dictofNodeName, array, "park:hasPermiteActiveHours", "park:OnStreetParking", semanticDescriptor, literaldataTypesNestNodes);
+                if (util.isArrary(m2mcin['permitActiveHours']))
+                {
+                    for (var i = 0; i < ln; i++)
+                    {
+                        var arrvalue = dictToArray(m2mcin['permitActiveHours'][i], true);
+                        createNestedNode(dictofNodeName, arrvalue, "park:hasPermiteActiveHours", "park:OnStreetParking", semanticDescriptor, literaldataTypesNestNodes);
                     }
                 }
-                else {
-                    createNestedNode(dictofNodeName, m2mcin['permitActiveHours'], "park:hasPermiteActiveHours", "park:OnStreetParking", semanticDescriptor, literaldataTypesNestNodes);
+                else
+                {
+                    var arrvalue = dictToArray(m2mcin['permitActiveHours']);
+                    createNestedNode(dictofNodeName, arrvalue, "park:hasPermiteActiveHours", "park:OnStreetParking", semanticDescriptor, literaldataTypesNestNodes);
                 }
 
             }
-            if (m2mcin.location != undefined) {
+            if (m2mcin.location != undefined)
+            {
+                console.log('location');
                 var ln = m2mcin['location']['coordinates'].length;
                 clearNodes("park:hasCoordinates", semanticDescriptor);
                 parseNode(semanticDescriptor.getElementsByTagName("park:hasLocationType")[0], semanticDescriptor, m2mcin['location']['type'])
