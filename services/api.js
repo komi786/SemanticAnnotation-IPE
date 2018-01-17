@@ -70,9 +70,9 @@ module.exports.cnt = function (rn,callback)
 
 module.exports.Resourcesubscription = function (rn, callback)
 {
-       var cse='/'+csebase;
-       var containerName = "/"+rn;
-       var newtopic=containerName.replace(cse,'');
+       // var cse='/'+csebase;
+    var containerName = "/"+rn;
+       // var newtopic=containerName.replace(cse,'');
         var request = require('request');
         request.post({
         headers:  {
@@ -86,9 +86,9 @@ module.exports.Resourcesubscription = function (rn, callback)
             JSON.stringify({"m2m:sub":
                 {
                     "enc": {
-                        "net": [1, 3, 4]
+                        "net": [3, 4]
                     },
-                    "nu":["mqtt://"+mqttBroker+newtopic+"?ct=json"],
+                    "nu":["mqtt://"+mqttBroker+'/'+mqtt_topic + '?ct=json'],
                     "nct": 2,
                     "rn":sub
                 }
@@ -227,10 +227,6 @@ module.exports.checkResourceAnnotation = function (rn, callback)
 module.exports.checkResourcesubscription = function (rn, callback)
 {
     var containerName = '/'+rn.replace(" ",'')+'/'+sub
-<<<<<<< HEAD
-  //  console.log(containerName)
-=======
->>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
     var AEs='';
     var http = require('http');
     var options = {
@@ -267,14 +263,14 @@ module.exports.checkResourcesubscription = function (rn, callback)
 var colorDetails = [
     '#9ed1c7','#ced4ae','#dfc39f','#ced4ae','#9ed1c7','#eec900'
 ];
-module.exports.doTopicSubscription=function (cnt)
+module.exports.doTopicSubscription=function ()
 {
     var mqttclient  = require('./mqtt_pxy');
-    if (cnt.includes("+"))
-    {
-        cnt=cnt.split("+").join("/");
-    }
-    mqttclient.subscibeTopic(cnt);
+    // if (cnt.includes("+"))
+    // {
+    //     cnt=cnt.split("+").join("/");
+    // }
+    mqttclient.subscibeTopic();
 
 }
 //Latest contentInstance Retrival

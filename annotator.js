@@ -16,47 +16,55 @@ app.get('/annotateResource/*',function(req,res)  //Subscribe Target entity and i
     var tempaeid=rn.split('/');
     var subcnt=rn.replace(cse,'');
 
-    tempaeid=tempaeid.slice(1,tempaeid.length);
-    if (rn.includes('/') )
-    {
-        global.cnt = tempaeid[0];
-        api.cnt(subcnt, function (response)
+    try {
+        tempaeid=tempaeid.slice(1,tempaeid.length);
+        if (rn.includes('/') )
         {
-            var m2mresources = JSON.parse(response)
-            if (m2mresources['m2m:dbg'] == undefined)
+            global.cnt = tempaeid[0];
+            api.cnt(subcnt, function (response)
             {
-                var itemsProcessed = 0;
-                var uris = m2mresources["m2m:uril"];
-                var resource = uris.toString();
-                var splittogetlast = resource.split(',');
-                var rnparam = (cse + rn).toString()
-                splittogetlast.sort(function (arg1, arg2) {
-                    return arg1.length - arg2.length
-                })
-                var count = 0;
-                asyncLoop.eachSeries(splittogetlast, function (item, next)
+                var m2mresources = JSON.parse(response)
+                if (m2mresources['m2m:dbg'] == undefined)
                 {
-                    var temp = item.toString()
-                    var splititem = temp.split('/');
-                    service.mobiusMqttsubscription(temp);
+                    var itemsProcessed = 0;
+                    var uris = m2mresources["m2m:uril"];
+                    var resource = uris.toString();
+                    var splittogetlast = resource.split(',');
+                    var rnparam = (cse + rn).toString()
+                    splittogetlast.sort(function (arg1, arg2) {
+                        return arg1.length - arg2.length
+                    })
+                    var count = 0;
+                    asyncLoop.eachSeries(splittogetlast, function (item, next)
+                    {
+                        var temp = item.toString()
+                        var splititem = temp.split('/');
+                        service.csesubscription(temp);
 
-                    next();
-                }, function (response, error)
+                        next();
+                    }, function (response, error)
+                    {
+                        res.send(m2mresources)
+                    })
+                    api.doTopicSubscription()
+                }
+                else
                 {
                     res.send(m2mresources)
-                })
-            }
-            else
-            {
-                res.send(m2mresources)
-            }
-        })
+                }
+            })
+        }
+        else
+        {
+            service.csesubscription(rn);
+            res.send(rn);
+        }
     }
-    else
+    catch (error)
     {
-        service.mobiusMqttsubscription(rn);
-        res.send(rn);
+        console.log(error)
     }
+
 })
 if(process.env.NODE_ENV !== 'n') {
     process.once('uncaughtException', function(err) {

@@ -2,13 +2,16 @@
  * Created by Mac on 29/06/2017.
  */
 
+global.mqttsubRootPath='/oneM2M/req/+/'
+
 //--Mendatory Setting
-global.serverIP="192.168.0.182"
+global.serverIP="203.253.128.161"
     //"203.253.128.161";
 global.serverPort=7579;  //
-global.mqttBroker="192.168.0.182";
+global.mqttBroker="203.253.128.161";
 global.cnt= "";  //
 global.cseid="/Mobius";  //CSE Id
 global.csebase="Mobius";  //CSE name
 global.smd="SD1";  //semanticDescriptor Resource Name
-global.sub="sub1_monitor1";  // subscription resource Name
+global.sub="sub5";  // subscription resource Name
+global.mqtt_topic="mqttANSUB"

@@ -4,320 +4,248 @@
 
 var api=require('./api');
 var mqtt=require('./mqtt_pxy');
-var util=require('util');
+var config  = require('../configFile');
 var dataStructureFile=require('./dataStructure');
 var notif=function (parentResourcePath)
 {
-<<<<<<< HEAD
     var notificationContent=parentResourcePath['pc']['m2m:sgn'];
-    if (notificationContent && notificationContent['net']==3)
-    {
-        console.log("Notification =",notificationContent);
-=======
-    var notificationContent=message['pc']['m2m:sgn'];
-    // Only consider new resource creations
-    if (notificationContent && notificationContent['net']==3)
-    {
-        console.log("Notification =",notificationContent);
-        var resourceName=getParentResourcePath(notificationContent['sur']);
->>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
-        if (notificationContent['nev']['rep']['m2m:cnt'])   //Notif--New container have been created--Subscribe CNT--Make MQTT subscription
+    try {
+        if (notificationContent && (notificationContent['net']==3 || notificationContent['net']==4 ))
         {
-            var newcnt = notificationContent['nev']['rep']['m2m:cnt'];
-            var fullresourceName = resourceName + '/' + newcnt['rn'];
-            api.checkcontainerExist(fullresourceName,function (cnt)
+            console.log("Notification =",notificationContent);
+            var resourceName=getParentResourcePath(notificationContent['sur']);
+            if (notificationContent['nev']['rep']['m2m:cnt'])   //Notif--New container have been created--Subscribe CNT--Make MQTT subscription
             {
-                if(cnt["m2m:cnt"])
+                var newcnt = notificationContent['nev']['rep']['m2m:cnt'];
+                var fullresourceName = resourceName + '/' + newcnt['rn'];
+                api.checkcontainerExist(fullresourceName,function (cnt)
                 {
-                    console.log('Create new container subscription',fullresourceName);
-                    api.Resourcesubscription(fullresourceName, function (response)
+                    if(cnt["m2m:cnt"])
                     {
-                        api.doTopicSubscription(fullresourceName.replace(csebase,''))
-                    })
+                        console.log('Create new container subscription',fullresourceName);
+                        api.Resourcesubscription(fullresourceName, function (response)
+                        {
+                            api.doTopicSubscription()
+                        })
+                    }
+
+                })
+
+            }
+            else if(notificationContent['nev']['rep']['m2m:cin'])                //Notif--New contentInstance have been created. parse SMD and Update
+            {
+                var newcin=notificationContent['nev']['rep']['m2m:cin'];
+                var resourceNameSplit=resourceName.split('/');
+                var subscriptionresourceName=resourceNameSplit[resourceNameSplit.length-1];
+                var prn=resourceNameSplit[3];
+                var parentResourcePath=getParentResourcePath(resourceName);
+
+                if(prn.toLowerCase()=="parkingspot")
+                {
+                    if (subscriptionresourceName=="info")
+                    {
+                        createDescription(newcin,prn,parentResourcePath);
+                        var statusrootparent=parentResourcePath+'/status';
+                        api.latestcin(statusrootparent,function (res)
+                        {
+                            if(res['m2m:cin'])
+                            {
+                                createDescription(res['m2m:cin'],prn,parentResourcePath)
+                            }
+                        })
+                    }
+                    else if(subscriptionresourceName=="status")
+                    {
+                        createDescription(newcin,prn,parentResourcePath);
+                        var inforootparent=parentResourcePath+'/info';
+                        api.latestcin(inforootparent,function (res)
+                        {
+                            if(res['m2m:dbg']==undefined)
+                            {
+                                var resm2mcin=JSON.parse(res['m2m:cin']['con']);
+                                res['m2m:cin']['con']=resm2mcin
+                                createDescription(res['m2m:cin'],prn,parentResourcePath);
+                            }
+
+                        })
+                    }
+                }
+                else if(prn.toLowerCase()=="offstreetparking")
+                {
+                    if (subscriptionresourceName=="info")
+                    {
+                        createDescription(newcin,prn,parentResourcePath);
+                        var availableSpotNumrootparent=parentResourcePath+'/availableSpotNum';
+                        api.latestcin(availableSpotNumrootparent,function (res)
+                        {
+                            if(res['m2m:dbg']==undefined) {
+                                createDescription(res['m2m:cin'],prn,parentResourcePath)
+                            }
+                        })
+                        var aggregateRatingrootparent=parentResourcePath+'/aggregateRating';
+                        api.latestcin(aggregateRatingrootparent,function (res)
+                        {
+                            if(res['m2m:dbg']==undefined) {
+                                createDescription(res['m2m:cin'],prn,parentResourcePath)
+                            }
+                        })
+                    }
+                    else if(subscriptionresourceName=="availableSpotNum")
+                    {
+                        createDescription(newcin, prn, parentResourcePath);
+                        var inforootparent = parentResourcePath + '/info';
+                        api.latestcin(inforootparent, function (res) {
+                            if (res['m2m:dbg'] == undefined) {
+                                createDescription(res['m2m:cin'], prn, parentResourcePath)
+                            }
+                        })
+                        var aggregateRatingrootparent=parentResourcePath+'/aggregateRating';
+                        api.latestcin(aggregateRatingrootparent,function (res)
+                        {
+                            if(res['m2m:dbg']==undefined) {
+                                createDescription(res['m2m:cin'], prn,parentResourcePath)
+                            }
+                        })
+                    }
+                    else if(subscriptionresourceName=="aggregateRating")
+                    {
+                        createDescription(res['m2m:cin'], prn, parentResourcePath)
+                        var inforootparent = parentResourcePath + '/info';
+                        api.latestcin(inforootparent, function (res) {
+                            if (res['m2m:dbg'] == undefined) {
+                                createDescription(res['m2m:cin'], prn, parentResourcePath)
+                            }
+                        })
+                        var availableSpotNumrootparent=parentResourcePath+'/availableSpotNum';
+                        api.latestcin(availableSpotNumrootparent,function (res)
+                        {
+                            if(res['m2m:dbg']==undefined)
+                            {
+                                createDescription(res['m2m:cin'], prn,parentResourcePath)
+                            }
+                        })
+                    }
+                    else
+                    {
+                        createDescription(newcin,prn,parentResourcePath)
+                    }
+                }
+                else if(prn.toLowerCase()=="onstreetparking")
+                {
+                    if (subscriptionresourceName=="info")
+                    {
+                        createDescription(newcin,prn,parentResourcePath);
+                        var availableSpotNumrootparent=parentResourcePath+'/availableSpotNum';
+                        api.latestcin(availableSpotNumrootparent,function (res)
+                        {
+                            if(res['m2m:dbg']==undefined)
+                            {
+                                createDescription(res['m2m:cin'],prn,parentResourcePath)
+                            }
+                        })
+
+                    }
+                    else if(subscriptionresourceName=="availableSpotNum")
+                    {
+                        createDescription(newcin,prn,parentResourcePath);
+                        var inforootparent=parentResourcePath+'/info';
+                        api.latestcin(inforootparent,function (res)
+                        {
+                            if(res['m2m:dbg']==undefined) {
+                                createDescription(res['m2m:cin'], prn,parentResourcePath)
+                            }
+                        })
+                    }
                 }
 
-            })
+
+            }
 
         }
-        else if(notificationContent['nev']['rep']['m2m:cin'])                //Notif--New contentInstance have been created. parse SMD and Update
-        {
-            var newcin=notificationContent['nev']['rep']['m2m:cin'];
-            
-            var resourceNameSplit=resourceName.split('/');
-            var subscriptionresourceName=resourceNameSplit[resourceNameSplit.length-1];
-            var prn=resourceNameSplit[3];
-            var parentResourcePath=getParentResourcePath(resourceName);
-
-<<<<<<< HEAD
-            var newcin=notificationContent['nev']['rep']['m2m:cin'];
-            var resourceNameSplit=resourceName.split('/');
-            var subscriptionresourceName=resourceNameSplit[resourceNameSplit.length-1];
-            var prn=resourceNameSplit[3];
-            var parentResourcePath=getParentResourcePath(resourceName);
-            // var rootparent=parentResourcePath['pc']['m2m:sgn']['sur']
-            // var rootparentsplit=rootparent.split('/');
-            // var subscriptionresourceName='/'+rootparentsplit[rootparentsplit.length-2];
-            // rootparent=rootparent.replace('/'+rootparentsplit[rootparentsplit.length-1],'');
-            // subscriptionresourceName=subscriptionresourceName.replace('/','');
-            // var prn=retrivalParentResourceURI(rootparent);
-            // var smdminus='/'+rootparentsplit[rootparentsplit.length-2];
-            // var smdURI=rootparent.replace(smdminus,'');
-            // smdminus='/'+rootparentsplit[rootparentsplit.length-1];
-            // rootparent=rootparent.replace(smdminus,'');
-=======
->>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
-            if(prn.toLowerCase()=="parkingspot")
-            {
-                if (subscriptionresourceName=="info")
-                {
-                    createDescription(newcin,prn,parentResourcePath);
-<<<<<<< HEAD
-=======
-
->>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
-                    var statusrootparent=parentResourcePath+'/status';
-                    api.latestcin(statusrootparent,function (res)
-                    {
-                        if(res['m2m:cin'])
-                        {
-                            createDescription(res['m2m:cin'],prn,parentResourcePath)
-                        }
-                    })
-                }
-                else if(subscriptionresourceName=="status")
-                {
-                    createDescription(newcin,prn,parentResourcePath);
-<<<<<<< HEAD
-
-                    var inforootparent=rootparent.replace(subscriptionresourceName,'info');
-=======
->>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
-
-                    var inforootparent=parentResourcePath+'/info';
-                    api.latestcin(inforootparent,function (res)
-                    {
-                        if(res['m2m:dbg']==undefined)
-                        {
-                            var resm2mcin=JSON.parse(res['m2m:cin']['con']);
-                            res['m2m:cin']['con']=resm2mcin
-                            createDescription(res['m2m:cin'],prn,parentResourcePath);
-                        }
-
-                    })
-                }
-            }
-            else if(prn.toLowerCase()=="offstreetparking")
-            {
-                if (subscriptionresourceName=="info")
-                {
-<<<<<<< HEAD
-
-                    createDescription(newcin,prn,parentResourcePath);
-                    var availableSpotNumrootparent=rootparent.replace(subscriptionresourceName,'availableSpotNum');
-                    api.latestcin(availableSpotNumrootparent,function (res)
-                    {
-                        if(res['m2m:dbg']==undefined) {
-                            createDescription(res['m2m:cin'], prn,parentResourcePath)
-=======
-                    createDescription(newcin,prn,parentResourcePath);
-                    var availableSpotNumrootparent=parentResourcePath+'/availableSpotNum';
-                    api.latestcin(availableSpotNumrootparent,function (res)
-                    {
-                        if(res['m2m:dbg']==undefined) {
-                            createDescription(res['m2m:cin'],prn,parentResourcePath)
->>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
-                        }
-                    })
-                    var aggregateRatingrootparent=parentResourcePath+'/aggregateRating';
-                    api.latestcin(aggregateRatingrootparent,function (res)
-                    {
-                        if(res['m2m:dbg']==undefined) {
-                            createDescription(res['m2m:cin'],prn,parentResourcePath)
-                        }
-                    })
-
-                }
-                else if(subscriptionresourceName=="availableSpotNum")
-                {
-<<<<<<< HEAD
-                    // var parentResource=retrivalParentResourceURI(parentResourcePath['pc']['m2m:sgn']['sur'])
-                    createDescription(newcin,prn,parentResourcePath);
-                    var inforootparent=rootparent.replace(subscriptionresourceName,'info');
-                    api.latestcin(inforootparent,function (res)
-                    {
-                        if(res['m2m:dbg']==undefined) {
-                            createDescription(res['m2m:cin'], prn,parentResourcePath)
-=======
-                    createDescription(newcin,prn,parentResourcePath);
-                    var inforootparent=parentResourcePath+'/info';
-                    api.latestcin(inforootparent,function (res)
-                    {
-                        if(res['m2m:dbg']==undefined) {
-                            createDescription(res['m2m:cin'],prn,parentResourcePath)
->>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
-                        }
-                    })
-                    var aggregateRatingrootparent=parentResourcePath+'/aggregateRating';
-                    api.latestcin(aggregateRatingrootparent,function (res)
-                    {
-                        if(res['m2m:dbg']==undefined) {
-<<<<<<< HEAD
-                            createDescription(res['m2m:cin'], prn,parentResourcePath)
-=======
-                            createDescription(res['m2m:cin'],prn,parentResourcePath)
->>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
-                        }
-                    })
-                }
-                else if(subscriptionresourceName=="aggregateRating")
-                {
-                    createDescription(newcin,prn,parentResourcePath);
-<<<<<<< HEAD
-                    var inforootparent=rootparent.replace(subscriptionresourceName,'info');
-                    api.latestcin(inforootparent,function (res)
-                    {
-                        if(res['m2m:dbg']==undefined) {
-                            createDescription(res['m2m:cin'], prn,parentResourcePath)
-=======
-                    var inforootparent=parentResourcePath+'/info';
-                    api.latestcin(inforootparent,function (res)
-                    {
-                        if(res['m2m:dbg']==undefined) {
-                            createDescription(res['m2m:cin'],prn,parentResourcePath)
->>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
-                        }
-                    })
-                    var availableSpotNumrootparent=parentResourcePath+'/availableSpotNum';
-                    api.latestcin(availableSpotNumrootparent,function (res)
-                    {
-                        if(res['m2m:dbg']==undefined) {
-<<<<<<< HEAD
-                            createDescription(res['m2m:cin'], prn,parentResourcePath)
-=======
-                            createDescription(res['m2m:cin'],prn,parentResourcePath)
->>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
-                        }
-                    })
-                }
-                else
-                {
-                    createDescription(newcin,prn,parentResourcePath)
-                }
-            }
-            else if(prn.toLowerCase()=="onstreetparking")
-            {
-                if (subscriptionresourceName=="info")
-                {
-<<<<<<< HEAD
-
-                    createDescription(newcin,prn,rootparent);
-                    var availableSpotNumrootparent=rootparent.replace(subscriptionresourceName,'availableSpotNum');
-=======
-                    createDescription(newcin,prn,parentResourcePath);
-                    var availableSpotNumrootparent=parentResourcePath+'/availableSpotNum';
->>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
-                    api.latestcin(availableSpotNumrootparent,function (res)
-                    {
-                        if(res['m2m:dbg']==undefined)
-                        {
-<<<<<<< HEAD
-
-=======
->>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
-                            createDescription(res['m2m:cin'],prn,parentResourcePath)
-                        }
-                    })
-
-                }
-                else if(subscriptionresourceName=="availableSpotNum")
-                {
-                    createDescription(newcin,prn,parentResourcePath);
-<<<<<<< HEAD
-                    var inforootparent=rootparent.replace(subscriptionresourceName,'info');
-                    api.latestcin(inforootparent,function (res)
-                    {
-                        if(res['m2m:dbg']==undefined) {
-
-=======
-                    var inforootparent=parentResourcePath+'/info';
-                    api.latestcin(inforootparent,function (res)
-                    {
-                        if(res['m2m:dbg']==undefined) {
->>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
-                            createDescription(res['m2m:cin'], prn,parentResourcePath)
-                        }
-                    })
-                }
-            }
-
-
-        }
-<<<<<<< HEAD
-=======
-        // else if(notificationContent['nev']['rep']['m2m:sub'])
-        // { //since CSE returns the latest subscription resource rn in case of more than one subscription rather then particular
-            //deleted m2m:sub rn---It is not possible to check whether rn exist and need to subscription of container parent or not)
-        //     console.log(resourcePath);
-        //     // api.checkcontainerExist(fullresourceName,function (cnt)
-        //     // {
-        //     //
-        //     //     if(cnt["m2m:cnt"])
-        //     //     {
-        //     //         console.log('Create container notification',fullresourceName);
-        //     //         api.Resourcesubscription(fullresourceName, function (response)
-        //     //         {
-        //     //             api.doTopicSubscription(fullresourceName)
-        //     //         })
-        //     //     }
-        //     //
-        //     // })
-        //     var res=resourceName.split("/").join("+");
-        //     api.doTopicSubscription(res)
-        //     return
-        // }
->>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
 
     }
+    catch (error)
+    {
+        console.log(error)
+    }
+
 }
+
 var createDescription=function (cin,rpn,smdprnresource)
 {
+    // console.log(smdprnresource);
+
     api.semanticDescription(smdprnresource,function (str)
     {
         var data=JSON.parse(str);
         if (data['m2m:smd'])
         {
-            var sd=data['m2m:smd']['dsp'];
-            sd= Base64.decode(sd);
-            var newSD=ParsingSDFILE(cin,rpn,sd);
-            if(newSD!=sd)
+            try
             {
-                newSD=Base64.encode(newSD);
-                var form={'rn':smdprnresource,'dspt':newSD};
-                api.UpdateResourceAnnotation(form,function (res)
+                if(data['m2m:smd']['dsp'])
                 {
-                    console.log('m2m:smd=',res);
-                })
+                    var sd=data['m2m:smd']['dsp'];
+                    sd= Base64.decode(sd);
+                    var newSD=ParsingSDFILE(cin,rpn,sd);
+
+                    if(newSD.toString()!=sd.toString())
+                    {
+                        newSD=Base64.encode(newSD);
+                        var form={'rn':smdprnresource,'dspt':newSD};
+                        api.UpdateResourceAnnotation(form,function (res)
+                        {
+                            console.log('m2m:smd=',res);
+                        })
+                    }
+                    else
+                    {
+                        console.log('No Change occured= '+Base64.encode(sd))
+                    }
+                }
+
             }
-            else {
-                console.log('No RDF model for given contentInstance');
+            catch (error){
+                console.log(error)
             }
+
         }
         else
         {
-            var dspt = makeDSPTOnStreetParking(rpn);
-            var form = {'rn': smdprnresource, 'dsp': Base64.encode(dspt) };
-            api.ResourceAnnotation(form, function (response)
+            try
             {
-                var sd=(JSON.parse(response))['m2m:smd']['dsp'];
-                sd= Base64.decode(sd);
-                var newSD=ParsingSDFILE(cin,rpn,sd);
-                newSD=Base64.encode(newSD);
-                var form={'rn':smdprnresource,'dspt':newSD};
-                api.UpdateResourceAnnotation(form,function (res)
+                var dspt = makeDSPTOnStreetParking(rpn);
+                var form = {'rn': smdprnresource, 'dsp': Base64.encode(dspt) };
+                api.ResourceAnnotation(form, function (response)
                 {
-                    console.log('m2m:smd=',res);
+                    var res=JSON.parse(response)
+                    if(res['m2m:smd'])
+                    {
+
+                        if(res['m2m:smd']['dsp'])
+                        {
+                            var sd=res['m2m:smd']['dsp'];
+                            sd= Base64.decode(sd);
+                            var newSD=ParsingSDFILE(cin,rpn,sd);
+                            newSD=Base64.encode(newSD);
+                            var form={'rn':smdprnresource,'dspt':newSD};
+                            api.UpdateResourceAnnotation(form,function (res)
+                            {
+                                console.log('m2m:smd=',res);
+                            })
+
+                        }
+
+                    }
+
+
                 })
-            })
+            }
+            catch (error)
+            {
+                console.log(error)
+            }
+
+
         }
     })
 }
@@ -337,6 +265,7 @@ function squash(arr)
 }
 var makeDSPTOnStreetParking=function(parent)
 {
+
     var fs = require('fs');
     var dspt="";
     if (parent.toLowerCase()==("parkingSpot").toLowerCase())
@@ -394,84 +323,118 @@ function ParsingSDFILE(cinObject,rootParent,document) {
     var semanticDescriptor = new DOMParser().parseFromString(xmlDoc, "text/xml"); //parsing xml
     var m2mcin = cinObject['con']
     var resourceName = cinObject.rn.toLowerCase(); //getting out rn
-   // var m2mcin = cinObject.con; //getting out cin
-    if (rootParent.toLowerCase() == "parkingspot")
-    {
-        if(m2mcin.type !=undefined || m2mcin['id'] != undefined ||m2mcin.name != undefined  || m2mcin.dateModified != undefined || m2mcin['category'] != undefined
-            ||m2mcin['status'] != undefined  || m2mcin.refParkingSite != undefined ||   m2mcin.location != undefined)
+    // var m2mcin = cinObject.con; //getting out cin
+    try {
+        if (rootParent.toLowerCase() == "parkingspot")
         {
-            if (m2mcin['name'] != undefined)
+            if(m2mcin.type !=undefined || m2mcin['id'] != undefined ||m2mcin.name != undefined  || m2mcin.dateModified != undefined || m2mcin['category'] != undefined
+                ||m2mcin['status'] != undefined  || m2mcin.refParkingSite != undefined ||   m2mcin.location != undefined)
             {
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasName")[0], semanticDescriptor, m2mcin['name'])
-            }
-            if (m2mcin['id'] != undefined) {
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasId")[0], semanticDescriptor, m2mcin['id'])
-            }
-            if (m2mcin['type'] != undefined) {
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasType")[0], semanticDescriptor, m2mcin['type'])
-
-            }
-            if (m2mcin['status'] != undefined)
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasStatusValue")[0], semanticDescriptor, m2mcin['status'])
-                var datestring=new Date().toISOString()
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasStatusTimeStamp")[0], semanticDescriptor, datestring)
-            }
-            if (m2mcin['dateModified'] != undefined) {
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasDateModified")[0], semanticDescriptor, m2mcin['dateModified'])
-            }
-
-            if (m2mcin['category'] != undefined) {
-                var ln = m2mcin['category'].length;
-                clearNodes("park:hasCategory", semanticDescriptor);
-                createNode("park:hasCategory", semanticDescriptor, ln, "string", "park:ParkingSpot", true)
-                var nodes = semanticDescriptor.getElementsByTagName("park:hasCategory");
-                for (var i = 0; i < ln; i++) {
-                    parseNode(nodes[i], semanticDescriptor, m2mcin['category'][i])
+                if (m2mcin['name'] != undefined)
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasName")[0], semanticDescriptor, m2mcin['name'])
                 }
-            }
-            if (m2mcin['refParkingSite'] != undefined) {
-                var ln = m2mcin['refParkingSite'].length;
-                clearNodes("park:hasRefParkingSite", semanticDescriptor);
-                createNode("park:hasRefParkingSite", semanticDescriptor, ln, "string", "park:ParkingSpot", true)
-                var nodes = semanticDescriptor.getElementsByTagName("park:hasRefParkingSite");
-                for (var i = 0; i < ln; i++) {
-                    parseNode(nodes[i], semanticDescriptor, m2mcin['refParkingSite'][i])
+                if (m2mcin['id'] != undefined) {
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasId")[0], semanticDescriptor, m2mcin['id'])
                 }
-                var ParkingSpot = semanticDescriptor.getElementsByTagName("park:ParkingSpot")[0];
-                var newvalue = 'http://www.semanticweb.org/wise-iot/ontologies/2017/1/parkingOntology.owl#' + m2mcin['refParkingSite'][0];
-                updatenodeAtrribute(ParkingSpot, semanticDescriptor, "rdf:about", newvalue);
+                if (m2mcin['type'] != undefined) {
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasType")[0], semanticDescriptor, m2mcin['type'])
 
-            }
-            if (m2mcin['location'] != undefined) {
-                var ln = m2mcin['location']['coordinates'].length;
-                clearNodes("park:hasLocation", semanticDescriptor);
-                createNode("park:hasLocation", semanticDescriptor, 1, "string", "park:ParkingSpot", false)
-                createNode("park:hasLocationType", semanticDescriptor, 1, "string", "park:hasLocation", true)
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasLocationType")[0], semanticDescriptor, m2mcin['location']['type'])
-                if (  typeof m2mcin['location']['coordinates'][0] === "object") {
-                    for (var i = 0; i < ln; i++)
+                }
+                if (m2mcin['status'] != undefined)
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasStatusValue")[0], semanticDescriptor, m2mcin['status'])
+                    var datestring=new Date().toISOString()
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasStatusTimeStamp")[0], semanticDescriptor, datestring)
+                }
+                if (m2mcin['dateModified'] != undefined) {
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasDateModified")[0], semanticDescriptor, m2mcin['dateModified'])
+                }
+
+                if (m2mcin['category'] != undefined)
+                {
+                    console.log('category')
+                    if(typeof m2mcin['category'] =="object" )
+                    {
+                        var ln = m2mcin['category'].length;
+                        var cat=m2mcin['category']
+                        if (ln != semanticDescriptor.getElementsByTagName("park:hasCategory").length)
+                        {
+                            clearNodes("park:hasCategory", semanticDescriptor);
+                            createNode("park:hasCategory", semanticDescriptor, ln, "string", "park:ParkingSpot", true)
+                        }
+                        var nodes = semanticDescriptor.getElementsByTagName("park:hasCategory");
+                        for (var i = 0; i <ln; i++)
+                        {
+                            parseNode(nodes[i], semanticDescriptor, cat[i])
+
+                        }
+                    }
+                    else
+                    {
+                        clearNodes("park:hasCategory", semanticDescriptor);
+                        createNode("park:hasCategory", semanticDescriptor, 1, "string", "park:ParkingSpot", true)
+                        parseNode(semanticDescriptor.getElementsByTagName("park:hasCategory")[0], semanticDescriptor, m2mcin['category'])
+                    }
+                }
+                if (m2mcin['refParkingSite'] != undefined) {
+                    var ln = m2mcin['refParkingSite'].length;
+                    clearNodes("park:hasRefParkingSite", semanticDescriptor);
+                    createNode("park:hasRefParkingSite", semanticDescriptor, ln, "string", "park:ParkingSpot", true)
+                    var nodes = semanticDescriptor.getElementsByTagName("park:hasRefParkingSite");
+                    for (var i = 0; i < ln; i++) {
+                        parseNode(nodes[i], semanticDescriptor, m2mcin['refParkingSite'][i])
+                    }
+                    var ParkingSpot = semanticDescriptor.getElementsByTagName("park:ParkingSpot")[0];
+                    var newvalue = 'http://www.semanticweb.org/wise-iot/ontologies/2017/1/parkingOntology.owl#' + m2mcin['refParkingSite'][0];
+                    updatenodeAtrribute(ParkingSpot, semanticDescriptor, "rdf:about", newvalue);
+
+                }
+                if (m2mcin['location'] != undefined)
+                {
+                    var ln = m2mcin['location']['coordinates'].length;
+                    clearNodes("park:hasLocation", semanticDescriptor);
+                    createNode("park:hasLocation", semanticDescriptor, 1, "string", "park:ParkingSpot", false)
+                    createNode("park:hasLocationType", semanticDescriptor, 1, "string", "park:hasLocation", true)
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasLocationType")[0], semanticDescriptor, m2mcin['location']['type'])
+                    if ( m2mcin['location']['coordinates'][0] instanceof Array)
+
+                    {
+                        for (var i = 0; i < ln; i++)
+                        {
+                            dictofNodeName = [["park:hasLongitude", "park:hasLatitude"], [true, true]]
+                            literaldataTypesNestNodes = ["double", "double"]
+                            createNestedNode(dictofNodeName, m2mcin['location']['coordinates'][i], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
+                        }
+                    }
+                    else
                     {
                         dictofNodeName = [["park:hasLongitude", "park:hasLatitude"], [true, true]]
                         literaldataTypesNestNodes = ["double", "double"]
-                        createNestedNode(dictofNodeName, m2mcin['location']['coordinates'][i], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
+                        if(m2mcin['location']['coordinates'] instanceof Array)
+                        {
+                            console.log('singleValue');
+                            createNestedNode(dictofNodeName, m2mcin['location']['coordinates'], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
+                        }
+                        else
+                        {
+
+                            var arr=m2mcin['location']['coordinates'].split(',');
+                            createNestedNode(dictofNodeName,arr, "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
+
+                        }
                     }
+
+
                 }
-                else {
-                    dictofNodeName = [["park:hasLongitude", "park:hasLatitude"], [true, true]]
-                    literaldataTypesNestNodes = ["double", "double"]
-                    createNestedNode(dictofNodeName, m2mcin['location']['coordinates'], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
-                }
+                var newsmd = semanticDescriptor
+                var XMLSerializer = xmldom.XMLSerializer;
+                var newSD = new XMLSerializer().serializeToString(newsmd);
+                return newSD
 
             }
-            var newsmd = semanticDescriptor
-            var XMLSerializer = xmldom.XMLSerializer;
-            var newSD = new XMLSerializer().serializeToString(newsmd);
-            return newSD
-
-        }
-        else if(typeof  m2mcin == 'string')
-        {
+            else if(typeof  m2mcin == 'string')
+            {
 
                 console.log('stringno=',m2mcin);
                 parseNode(semanticDescriptor.getElementsByTagName("park:hasStatusValue")[0], semanticDescriptor, m2mcin)
@@ -483,605 +446,646 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                 var newSD = new XMLSerializer().serializeToString(newsmd);
                 return newSD
 
+            }
+            else
+            {
+                return xmlDoc
+            }
+
+
         }
-        else
-        {
-            return xmlDoc
-        }
-
-
-    }
-    else if (rootParent.toLowerCase() == "onstreetparking")
-    {
-        if(m2mcin.type !=undefined || m2mcin['id'] != undefined ||m2mcin.name != undefined  || m2mcin.dateModified != undefined || m2mcin['category'] != undefined
-        ||m2mcin['areBordersMarked'] != undefined  || m2mcin.allowedVehicleType != undefined || m2mcin.requiredPermit != undefined || m2mcin.chargeType != undefined
-        || m2mcin.occupancyDetectionType != undefined||m2mcin.totalSpotNumber != undefined||m2mcin.refParkingSpot != undefined||m2mcin.availableSpotNumber != undefined||
-            m2mcin.permitActiveHours != undefined ||  m2mcin.location != undefined)
-        {
-            if (m2mcin.type != undefined)
+        else if (rootParent.toLowerCase() == "onstreetparking") {
+            if(m2mcin.type !=undefined || m2mcin['id'] != undefined ||m2mcin.name != undefined  || m2mcin.dateModified != undefined || m2mcin['category'] != undefined
+                ||m2mcin['areBordersMarked'] != undefined  || m2mcin.allowedVehicleType != undefined || m2mcin.requiredPermit != undefined || m2mcin.chargeType != undefined
+                || m2mcin['occupancyDetectionType'] != undefined||m2mcin.totalSpotNumber != undefined||m2mcin.refParkingSpot != undefined||m2mcin.availableSpotNumber != undefined||
+                m2mcin.permitActiveHours != undefined ||  m2mcin.location != undefined)
             {
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasType")[0], semanticDescriptor, m2mcin['type'])
-            }
-            if (m2mcin['id'] != undefined) {
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasId")[0], semanticDescriptor, m2mcin['id'])
-            }
-            if (m2mcin.name != undefined) {
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasName")[0], semanticDescriptor, m2mcin['name'])
-            }
-            if (m2mcin.dateModified != undefined) {
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasDateModified")[0], semanticDescriptor, m2mcin['dateModified'])
-            }
-            if (m2mcin['category'] != undefined)
-            {
-
-                var ln = m2mcin['category'].length;
-               var cat=m2mcin['category']
-                if (ln != semanticDescriptor.getElementsByTagName("park:hasCategory").length)
+                if (m2mcin['type'] != undefined)
                 {
-                    clearNodes("park:hasCategory", semanticDescriptor);
-                    createNode("park:hasCategory", semanticDescriptor, ln, "string", "park:OnStreetParking", true)
+                    console.log('type')
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasType")[0], semanticDescriptor, m2mcin['type'])
                 }
-                var nodes = semanticDescriptor.getElementsByTagName("park:hasCategory");
-                for (var i = 0; i <ln; i++)
+                if (m2mcin['id'] != undefined) {
+                    console.log('id')
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasId")[0], semanticDescriptor, m2mcin['id'])
+                }
+                if (m2mcin['name'] != undefined)
                 {
-
-
-                    parseNode(nodes[i], semanticDescriptor, cat[i])
-
+                    console.log('name')
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasName")[0], semanticDescriptor, m2mcin['name'])
                 }
-            }
-            if (m2mcin.areBordersMarked != undefined)
-            {
-                console.log('areBordersMarked');
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasAreBordersMarked")[0], semanticDescriptor, m2mcin['areBordersMarked'])
-            }
-            if (m2mcin.allowedVehicleType != undefined)
-            {
-                console.log('allowedVehicleType');
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasAllowedVehicleType")[0], semanticDescriptor, m2mcin['allowedVehicleType'])
-            }
-            if (m2mcin.requiredPermit != undefined)
-            {
-                console.log('requiredPermit');
-                var ln = m2mcin['requiredPermit'].length;
-                clearNodes("park:hasRequiredPermit", semanticDescriptor);
-                createNode("park:hasRequiredPermit", semanticDescriptor, ln, "string", "park:OnStreetParking", true)
-                var nodes = semanticDescriptor.getElementsByTagName("park:hasRequiredPermit");
-                for (var i = 0; i < nodes.length; i++) {
-                    parseNode(nodes[i], semanticDescriptor, m2mcin['requiredPermit'][i])
-                }
-            }
-            if (m2mcin.chargeType != undefined)
-            {
-                console.log('chargeType');
-                var ln = m2mcin['chargeType'].length;
-                clearNodes("park:hasChargeType", semanticDescriptor);
-                createNode("park:hasChargeType", semanticDescriptor, ln, "string", "park:OnStreetParking", true)
-                var nodes = semanticDescriptor.getElementsByTagName("park:hasChargeType");
-                for (var i = 0; i < nodes.length; i++) {
-                    parseNode(nodes[i], semanticDescriptor, m2mcin['chargeType'][i])
-                }
-            }
-            if (m2mcin.occupancyDetectionType != undefined) {
-
-                console.log('occupancyDetectionType');
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasOccupancyDetectionType")[0], semanticDescriptor, m2mcin['occupancyDetectionType'])
-            }
-            if (m2mcin.totalSpotNumber != undefined) {
-                console.log('totalSpotNumber');
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasTotalSpotNumber")[0], semanticDescriptor, m2mcin['totalSpotNumber'])
-            }
-            if (m2mcin.refParkingSpot != undefined)
-            {
-                console.log('refParkingSpot');
-                var ln = m2mcin['refParkingSpot'].length;
-                clearNodes("park:hasRefParkingSpot", semanticDescriptor);
-                createNode("park:hasRefParkingSpot", semanticDescriptor, ln, "string", "park:onStreetParking", true)
-                var nodes = semanticDescriptor.getElementsByTagName("park:hasRefParkingSpot");
-                for (var i = 0; i < nodes.length; i++) {
-                    parseNode(nodes[i], semanticDescriptor, m2mcin['refParkingSpot'][i])
-                }
-                var offStreetNode = semanticDescriptor.getElementsByTagName("park:OnStreetParking")[0];
-                var newvalue = 'http://www.semanticweb.org/wise-iot/ontologies/2017/1/parkingOntology.owl#' + m2mcin['refParkingSpot'][0];
-                updatenodeAtrribute(offStreetNode, semanticDescriptor, "rdf:about", newvalue);
-
-
-            }
-            if (m2mcin.availableSpotNumber != undefined) {
-                console.log('availableSpotNumber');
-                var ln = m2mcin['availableSpotNumber'].length;
-                clearNodes("park:hasAvailableSpotNumber", semanticDescriptor);
-                var dictofNodeName = [["park:hasValueOfAvailableSpotNumber", "park:hasTimeStampOfAvailableSpotNumber"], [true, true]];
-                var literaldataTypesNestNodes = ["string", "string"]
-                if (typeof m2mcin['availableSpotNumber'][0] === "object")
+                if (m2mcin['dateModified'] != undefined)
                 {
-                    for (var i = 0; i < ln; i++) {
-                        createNestedNode(dictofNodeName, m2mcin['availableSpotNumber'][i], "park:hasAvailableSpotNumber", "park:OnStreetParking", semanticDescriptor, literaldataTypesNestNodes);
-                    }
+                    console.log('dateModified')
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasDateModified")[0], semanticDescriptor, m2mcin['dateModified'])
                 }
-                else {
-                    createNestedNode(dictofNodeName, m2mcin['availableSpotNumber'], "park:hasAvailableSpotNumber", "park:OnStreetParking", semanticDescriptor, literaldataTypesNestNodes);
-                }
-
-            }
-            if (m2mcin.permitActiveHours != undefined)                         //make rdf/xml class type for permitActiveHours sensor information
-            {
-
-
-                var ln = m2mcin['permitActiveHours'].length;
-                clearNodes("park:hasPermiteActiveHours", semanticDescriptor);
-                var dictofNodeName = [["park:hasValueOfAvailableSpotNumber", "park:hasTimeStampOfAvailableSpotNumber"], [true, true]];
-                var literaldataTypesNestNodes = ["string", "string"]
-                if (util.isArrary(m2mcin['permitActiveHours']))
+                if (m2mcin['category'] != undefined)
                 {
-                    for (var i = 0; i < ln; i++)
+                    console.log('category')
+                    if(typeof m2mcin['category'] =="object" )
                     {
-                        var arrvalue = dictToArray(m2mcin['permitActiveHours'][i], true);
-                        createNestedNode(dictofNodeName, arrvalue, "park:hasPermiteActiveHours", "park:OnStreetParking", semanticDescriptor, literaldataTypesNestNodes);
+                        var ln = m2mcin['category'].length;
+                        var cat=m2mcin['category']
+                        if (ln != semanticDescriptor.getElementsByTagName("park:hasCategory").length)
+                        {
+                            clearNodes("park:hasCategory", semanticDescriptor);
+                            createNode("park:hasCategory", semanticDescriptor, ln, "string", "park:OnStreetParking", true)
+                        }
+                        var nodes = semanticDescriptor.getElementsByTagName("park:hasCategory");
+                        for (var i = 0; i <ln; i++)
+                        {
+
+
+                            parseNode(nodes[i], semanticDescriptor, cat[i])
+
+                        }
                     }
+                    else
+                    {
+                        clearNodes("park:hasCategory", semanticDescriptor);
+                        createNode("park:hasCategory", semanticDescriptor, 1, "string", "park:OnStreetParking", true)
+                        parseNode(semanticDescriptor.getElementsByTagName("park:hasCategory")[0], semanticDescriptor, m2mcin['category'])
+                    }
+
                 }
-                else
+                if (m2mcin['areBordersMarked'] != undefined)
                 {
-                    var arrvalue = dictToArray(m2mcin['permitActiveHours']);
-                    createNestedNode(dictofNodeName, arrvalue, "park:hasPermiteActiveHours", "park:OnStreetParking", semanticDescriptor, literaldataTypesNestNodes);
+                    console.log('areBordersMarked');
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasAreBordersMarked")[0], semanticDescriptor, m2mcin['areBordersMarked'])
                 }
-
-            }
-            if (m2mcin.location != undefined)
-            {
-                console.log('location');
-                var ln = m2mcin['location']['coordinates'].length;
-                clearNodes("park:hasCoordinates", semanticDescriptor);
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasLocationType")[0], semanticDescriptor, m2mcin['location']['type'])
-                if (typeof m2mcin['location']['coordinates'][0] === "object") {
-                    for (var i = 0; i < ln; i++) {
-                        dictofNodeName = [["park:hasLongitude", "park:hasLatitude"], [true, true]]
-                        literaldataTypesNestNodes = ["double", "double"]
-                        createNestedNode(dictofNodeName, m2mcin['location']['coordinates'][i], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
-
+                if (m2mcin['allowedVehicleType'] != undefined)
+                {
+                    console.log('allowedVehicleType');
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasAllowedVehicleType")[0], semanticDescriptor, m2mcin['allowedVehicleType'])
+                }
+                if (m2mcin['requiredPermit'] != undefined)
+                {
+                    console.log('requiredPermit');
+                    var ln = m2mcin['requiredPermit'].length;
+                    clearNodes("park:hasRequiredPermit", semanticDescriptor);
+                    createNode("park:hasRequiredPermit", semanticDescriptor, ln, "string", "park:OnStreetParking", true)
+                    var nodes = semanticDescriptor.getElementsByTagName("park:hasRequiredPermit");
+                    for (var i = 0; i < nodes.length; i++) {
+                        parseNode(nodes[i], semanticDescriptor, m2mcin['requiredPermit'][i])
                     }
                 }
-                else {
-                    dictofNodeName = [["park:hasLongitude", "park:hasLatitude"], [true, true]]
-                    literaldataTypesNestNodes = ["double", "double"]
-                    createNestedNode(dictofNodeName, m2mcin['location']['coordinates'], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
+                if (m2mcin['chargeType'] != undefined)
+                {
+                    console.log('chargeType');
+                    var ln = m2mcin['chargeType'].length;
+                    clearNodes("park:hasChargeType", semanticDescriptor);
+                    createNode("park:hasChargeType", semanticDescriptor, ln, "string", "park:OnStreetParking", true)
+                    var nodes = semanticDescriptor.getElementsByTagName("park:hasChargeType");
+                    for (var i = 0; i < nodes.length; i++) {
+                        parseNode(nodes[i], semanticDescriptor, m2mcin['chargeType'][i])
+                    }
                 }
-            }
+                if (m2mcin['occupancyDetectionType'] != undefined) {
 
-            var XMLSerializer = xmldom.XMLSerializer;
-            var newSD = new XMLSerializer().serializeToString(semanticDescriptor);
-            return newSD
-        }
-
-        else
-        {
-            return xmlDoc
-        }
-
-    }
-    else if (rootParent.toLowerCase() == "offstreetparking") {
-        if (m2mcin.type != undefined || m2mcin['id'] != undefined || m2mcin.name != undefined || m2mcin.dateModified != undefined || m2mcin['category'] != undefined
-            || m2mcin['areBordersMarked'] != undefined || m2mcin.allowedVehicleType != undefined || m2mcin.requiredPermit != undefined || m2mcin.chargeType != undefined
-           || m2mcin.refParkingSpot != undefined || m2mcin.availableSpotNumber != undefined ||
-            m2mcin.aggregateRating != undefined || m2mcin.location != undefined || m2mcin.contactPoint != undefined || m2mcin.openingHours != undefined)
-        {
-            if (m2mcin.name != undefined)
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasName")[0], semanticDescriptor, m2mcin['name'])
-            }
-            if (m2mcin.id != undefined) {
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasId")[0], semanticDescriptor, m2mcin['id'])
-            }
-            if (m2mcin.type != undefined) {
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasType")[0], semanticDescriptor, m2mcin['type'])
-
-            }
-            if (m2mcin.refParkingSpot != undefined) {
-                if (typeof m2mcin["refParkingSpot"] === "object") {
+                    console.log('occupancyDetectionType');
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasOccupancyDetectionType")[0], semanticDescriptor, m2mcin['occupancyDetectionType'])
+                }
+                if (m2mcin['totalSpotNumber'] != undefined)
+                {
+                    console.log('totalSpotNumber='+m2mcin['totalSpotNumber']);
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasTotalSpotNumber")[0], semanticDescriptor, m2mcin['totalSpotNumber'])
+                }
+                if (m2mcin['refParkingSpot'] != undefined)
+                {
+                    console.log('refParkingSpot');
                     var ln = m2mcin['refParkingSpot'].length;
                     clearNodes("park:hasRefParkingSpot", semanticDescriptor);
-                    createNode("park:hasRefParkingSpot", semanticDescriptor, ln, "string", "park:OffStreetParking", true)
+                    createNode("park:hasRefParkingSpot", semanticDescriptor, ln, "string", "park:onStreetParking", true)
                     var nodes = semanticDescriptor.getElementsByTagName("park:hasRefParkingSpot");
-                    for (var i = 0; i < nodes.length; i++) {
+                    for (var i = 0; i < nodes.length; i++)
+                    {
                         parseNode(nodes[i], semanticDescriptor, m2mcin['refParkingSpot'][i])
                     }
-                    var offStreetNode = semanticDescriptor.getElementsByTagName("park:OffStreetParking")[0];
+                    var offStreetNode = semanticDescriptor.getElementsByTagName("park:OnStreetParking")[0];
                     var newvalue = 'http://www.semanticweb.org/wise-iot/ontologies/2017/1/parkingOntology.owl#' + m2mcin['refParkingSpot'][0];
                     updatenodeAtrribute(offStreetNode, semanticDescriptor, "rdf:about", newvalue);
-                }
-                else {
-                    clearNodes("park:hasRefParkingSpot", semanticDescriptor);
-                    createNode("park:hasRefParkingSpot", semanticDescriptor, 1, "string", "park:OffStreetParking", true)
-                    var nodes = semanticDescriptor.getElementsByTagName("park:hasRefParkingSpot");
-                    parseNode(nodes[i], semanticDescriptor, m2mcin['refParkingSpot'])
-                    var offStreetNode = semanticDescriptor.getElementsByTagName("park:OffStreetParking")[0];
-                    var newvalue = 'http://www.semanticweb.org/wise-iot/ontologies/2017/1/parkingOntology.owl#' + m2mcin['refParkingSpot'];
-                    updatenodeAtrribute(offStreetNode, semanticDescriptor, "rdf:about", newvalue);
+
 
                 }
+                if (m2mcin['availableSpotNumber'] != undefined)
+                {
+                    console.log('availableSpotNumber');
+                    var ln = m2mcin['availableSpotNumber'].length;
+                    clearNodes("park:hasAvailableSpotNumber", semanticDescriptor);
+                    var dictofNodeName = [["park:hasValueOfAvailableSpotNumber", "park:hasTimeStampOfAvailableSpotNumber"], [true, true]];
+                    var literaldataTypesNestNodes = ["string", "string"]
+                    if (typeof m2mcin['availableSpotNumber'][0] != "object")
+                    {
+                        for (var i = 0; i < ln; i++)
+                        {
+                            createNestedNode(dictofNodeName, m2mcin['availableSpotNumber'][i], "park:hasAvailableSpotNumber", "park:OnStreetParking", semanticDescriptor, literaldataTypesNestNodes);
+                        }
+                    }
+                    else {
+                        createNestedNode(dictofNodeName, m2mcin['availableSpotNumber'], "park:hasAvailableSpotNumber", "park:OnStreetParking", semanticDescriptor, literaldataTypesNestNodes);
+                    }
+
+                }
+                if (m2mcin['permitActiveHours'] != undefined)                         //make rdf/xml class type for permitActiveHours sensor information
+                {
 
 
-            }
-            if (m2mcin.location != undefined) {
-                var ln = m2mcin['location']['coordinates'].length;
-                clearNodes("park:hasCoordinates", semanticDescriptor);
-                // createNode("park:hasLocation",semanticDescriptor,1,"string","park:OffStreetParking",false)
-                // createNode("park:hasLocationType",semanticDescriptor,1,"string","park:hasLocation",true)
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasLocationType")[0], semanticDescriptor, m2mcin['location']['type'])
-                if (typeof m2mcin['location']['coordinates'][0] === "object") {
-                    // console.log("coordinatesss")
-                    for (var i = 0; i < ln; i++) {
+                    var ln = m2mcin['permitActiveHours'].length;
+                    clearNodes("park:hasPermiteActiveHours", semanticDescriptor);
+                    var dictofNodeName = [["park:hasPropertyName", "park:hasPropertyValue"], [true, true]];
+                    var literaldataTypesNestNodes = ["string", "string"]
+                    if ( typeof m2mcin['permitActiveHours']=="object") {
+                        var keys = dictToArray(m2mcin['permitActiveHours'], 'b');
+                        var values = dictToArray(m2mcin['permitActiveHours'], 'n');
+
+                        for (var i = 0; i < keys.length; i++)
+                        {
+                            var pactivehours=[];
+                            pactivehours.push(keys[i])
+                            pactivehours.push(values[i])
+                            console.log('permitActiveHours=',pactivehours)
+                            createNestedNode(dictofNodeName, pactivehours, "park:hasPermiteActiveHours", "park:OnStreetParking", semanticDescriptor, literaldataTypesNestNodes);
+                        }
+                    }
+
+                }
+                if (m2mcin['location'] != undefined)
+                {
+                    console.log('location');
+                    var ln = m2mcin['location']['coordinates'].length;
+                    clearNodes("park:hasCoordinates", semanticDescriptor);
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasLocationType")[0], semanticDescriptor, m2mcin['location']['type'])
+                    if (typeof m2mcin['location']['coordinates'][0] === "object")
+                    {
+                        for (var i = 0; i < ln; i++) {
+                            dictofNodeName = [["park:hasLongitude", "park:hasLatitude"], [true, true]]
+                            literaldataTypesNestNodes = ["double", "double"]
+                            createNestedNode(dictofNodeName, m2mcin['location']['coordinates'][i], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
+
+                        }
+                    }
+                    else
+                    {
                         dictofNodeName = [["park:hasLongitude", "park:hasLatitude"], [true, true]]
                         literaldataTypesNestNodes = ["double", "double"]
-                        createNestedNode(dictofNodeName, m2mcin['location']['coordinates'][i], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
+                        if(typeof m2mcin['location']['coordinates']==="string")
+                        {
+                            var arr=m2mcin['location']['coordinates'].split(',');
+                            createNestedNode(dictofNodeName,arr, "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
 
+                        }
+                        else
+                        {
+                            createNestedNode(dictofNodeName, m2mcin['location']['coordinates'], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
+                        }
+                        // createNestedNode(dictofNodeName, m2mcin['location']['coordinates'], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
                     }
                 }
-                else {
-                    dictofNodeName = [["park:hasLongitude", "park:hasLatitude"], [true, true]]
-                    literaldataTypesNestNodes = ["double", "double"]
-                    createNestedNode(dictofNodeName, m2mcin['location']['coordinates'], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
-                }
-            }
-            if (m2mcin.availableSpotNumber != undefined) {
-                var ln = m2mcin['availableSpotNumber'].length;
-                clearNodes("park:hasAvailableSpotNumber", semanticDescriptor);
-                var dictofNodeName = [["park:hasValueOfAvailableSpotNumber", "park:hasTimeStampOfAvailableSpotNumber"], [true, true]];
-                var literaldataTypesNestNodes = ["string", "string"]
-                for (var i = 0; i < ln; i++) {
-                    createNestedNode(dictofNodeName, m2mcin['availableSpotNumber'][i], "park:hasAvailableSpotNumber", "park:OffStreetParking", semanticDescriptor, literaldataTypesNestNodes);
-                }
-            }
-            if (m2mcin.contactPoint != undefined) {
-                if (typeof m2mcin["contactPoint"] === "object") {
-                    var ln = m2mcin['contactPoint'].length;
-                    clearNodes("park:hasContactPoint", semanticDescriptor);
-                    var dictofNodeName = [["park:hasTelePhone", "park:hasContactType", "hasContactOption", "hasAreaServed"], [true, true, true, true]];
-                    var literaldataTypesNestNodes = ["string", "string", "string", "string"]
-                    for (var i = 0; i < ln; i++) {
-                        var valuedict = [m2mcin['contactPoint'][i], "customer service", "TollFree", "US"]
-                        createNestedNode(dictofNodeName, valuedict, "park:hasContactPoint", "park:OffStreetParking", semanticDescriptor, literaldataTypesNestNodes);
-                    }
-                }
-                else {
-                    clearNodes("park:hasContactPoint", semanticDescriptor);
-                    var dictofNodeName = [["park:hasTelePhone", "park:hasContactType", "hasContactOption", "hasAreaServed"], [true, true, true, true]];
-                    var literaldataTypesNestNodes = ["string", "string", "string", "string"]
-                    var valuedict = [m2mcin['contactPoint'], "customer service", "TollFree", "US"]
-                    createNestedNode(dictofNodeName, valuedict, "park:hasContactPoint", "park:OffStreetParking", semanticDescriptor, literaldataTypesNestNodes);
 
-                }
+                var XMLSerializer = xmldom.XMLSerializer;
+                var newSD = new XMLSerializer().serializeToString(semanticDescriptor);
+                return newSD
+            }
 
-            }
-            if (m2mcin.dateModified != undefined) {
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasDateModified")[0], semanticDescriptor, m2mcin['dateModified'])
-            }
-            if (m2mcin.openingHours != undefined) {
-
-                parseNode(semanticDescriptor.getElementsByTagName("park:hasOpeningHours")[0], semanticDescriptor, m2mcin['openingHours'])
-            }
-            if (m2mcin.category != undefined) {
-                var ln = m2mcin['category'].length;
-                clearNodes("park:hasCategory", semanticDescriptor);
-                createNode("park:hasCategory", semanticDescriptor, ln, "string", "park:OffStreetParking", true)
-                var nodes = semanticDescriptor.getElementsByTagName("park:hasCategory");
-                for (var i = 0; i < nodes.length; i++) {
-                    parseNode(nodes[i], semanticDescriptor, m2mcin['category'][i])
-                }
-            }
-            if (m2mcin.refParkingSite != undefined) {
-                if (typeof m2mcin["refParkingSpot"] === "object") {
-                    var ln = m2mcin['refParkingSite'].length;
-                    clearNodes("park:hasRefParkingSite", semanticDescriptor);
-                    createNode("park:hasRefParkingSite", semanticDescriptor, ln, "string", "park:OffStreetParking", true)
-                    var nodes = semanticDescriptor.getElementsByTagName("park:hasRefParkingSite");
-                    for (var i = 0; i < nodes.length; i++) {
-                        parseNode(nodes[i], semanticDescriptor, m2mcin['refParkingSite'][i])
-                    }
-
-                }
-                else {
-                    clearNodes("park:hasRefParkingSite", semanticDescriptor);
-                    createNode("park:hasRefParkingSite", semanticDescriptor, 1, "string", "park:OffStreetParking", true)
-                    var nodes = semanticDescriptor.getElementsByTagName("park:hasRefParkingSite");
-                    parseNode(nodes[i], semanticDescriptor, m2mcin['refParkingSite'])
-                    var offStreetNode = semanticDescriptor.getElementsByTagName("park:OffStreetParking")[0];
-                    var newvalue = 'http://www.semanticweb.org/wise-iot/ontologies/2017/1/parkingOntology.owl#' + m2mcin['refParkingSite'];
-                    updatenodeAtrribute(offStreetNode, semanticDescriptor, "rdf:about", newvalue);
-                }
-            }
-            if (m2mcin.aggregateRating != undefined)
+            else
             {
-                if (typeof m2mcin['aggregateRating'] !== "object") {
-                    clearNodes("park:hasAggregatedRating", semanticDescriptor);
-                    var dictofNodeName = [["park:hasBestRating", "park:hasRatingValue", "park:hasRatingCount"], [true, true, true]];
-                    var literaldataTypesNestNodes = ["string", "string", "string"]
-                    var dictValue = ["", m2mcin['aggregateRating'], ""]
-                    createNestedNode(dictofNodeName, dictValue, "park:hasAggregatedRating", "park:OffStreetParking", semanticDescriptor, literaldataTypesNestNodes);
+                return xmlDoc
+            }
+
+        }
+        else if (rootParent.toLowerCase() == "offstreetparking")
+        {
+            if (m2mcin.type != undefined || m2mcin['id'] != undefined || m2mcin.name != undefined || m2mcin.dateModified != undefined || m2mcin['category'] != undefined
+                || m2mcin['areBordersMarked'] != undefined || m2mcin.allowedVehicleType != undefined || m2mcin.requiredPermit != undefined || m2mcin.chargeType != undefined
+                || m2mcin.refParkingSpot != undefined || m2mcin.availableSpotNumber != undefined ||
+                m2mcin.aggregateRating != undefined || m2mcin.location != undefined || m2mcin.contactPoint != undefined || m2mcin.openingHours != undefined)
+            {
+                if (m2mcin['name'] != undefined)
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasName")[0], semanticDescriptor, m2mcin['name'])
+                }
+                if (m2mcin['id'] != undefined) {
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasId")[0], semanticDescriptor, m2mcin['id'])
+                }
+                if (m2mcin['type'] != undefined) {
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasType")[0], semanticDescriptor, m2mcin['type'])
 
                 }
-                else {
-                    var ln = m2mcin['aggregateRating'].length;     //length of Aggregated String
-                    clearNodes("park:hasAggregatedRating", semanticDescriptor);
-                    var dictofNodeName = [["park:hasBestRating", "park:hasRatingValue", "park:hasRatingCount"], [true, true, true]];
-                    var literaldataTypesNestNodes = ["string", "string", "string"]
-                    for (var i = 0; i < ln; i++) {
-                        createNestedNode(dictofNodeName, m2mcin['aggregateRating'][i], "park:hasAggregatedRating", "park:OffStreetParking", semanticDescriptor, literaldataTypesNestNodes);
+                if (m2mcin['refParkingSpot'] != undefined)
+                {
+                    if (typeof m2mcin["refParkingSpot"] === "object")
+                    {
+                        var ln = m2mcin['refParkingSpot'].length;
+                        clearNodes("park:hasRefParkingSpot", semanticDescriptor);
+                        createNode("park:hasRefParkingSpot", semanticDescriptor, ln, "string", "park:OffStreetParking", true)
+                        var nodes = semanticDescriptor.getElementsByTagName("park:hasRefParkingSpot");
+                        for (var i = 0; i < nodes.length; i++) {
+                            parseNode(nodes[i], semanticDescriptor, m2mcin['refParkingSpot'][i])
+                        }
+                        var offStreetNode = semanticDescriptor.getElementsByTagName("park:OffStreetParking")[0];
+                        var newvalue = 'http://www.semanticweb.org/wise-iot/ontologies/2017/1/parkingOntology.owl#' + m2mcin['refParkingSpot'][0];
+                        updatenodeAtrribute(offStreetNode, semanticDescriptor, "rdf:about", newvalue);
+                    }
+                    else
+                    {
+                        clearNodes("park:hasRefParkingSpot", semanticDescriptor);
+                        createNode("park:hasRefParkingSpot", semanticDescriptor, 1, "string", "park:OffStreetParking", true)
+                        var nodes = semanticDescriptor.getElementsByTagName("park:hasRefParkingSpot");
+                        parseNode(nodes[i], semanticDescriptor, m2mcin['refParkingSpot'])
+                        var offStreetNode = semanticDescriptor.getElementsByTagName("park:OffStreetParking")[0];
+                        var newvalue = 'http://www.semanticweb.org/wise-iot/ontologies/2017/1/parkingOntology.owl#' + m2mcin['refParkingSpot'];
+                        updatenodeAtrribute(offStreetNode, semanticDescriptor, "rdf:about", newvalue);
+
+                    }
+
+
+                }
+                if (m2mcin['location'] != undefined) {
+                    var ln = m2mcin['location']['coordinates'].length;
+                    clearNodes("park:hasCoordinates", semanticDescriptor);
+                    // createNode("park:hasLocation",semanticDescriptor,1,"string","park:OffStreetParking",false)
+                    // createNode("park:hasLocationType",semanticDescriptor,1,"string","park:hasLocation",true)
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasLocationType")[0], semanticDescriptor, m2mcin['location']['type'])
+                    if (typeof m2mcin['location']['coordinates'][0] === "object") {
+                        // console.log("coordinatesss")
+                        for (var i = 0; i < ln; i++) {
+                            dictofNodeName = [["park:hasLongitude", "park:hasLatitude"], [true, true]]
+                            literaldataTypesNestNodes = ["double", "double"]
+                            createNestedNode(dictofNodeName, m2mcin['location']['coordinates'][i], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
+
+                        }
+                    }
+                    else {
+                        dictofNodeName = [["park:hasLongitude", "park:hasLatitude"], [true, true]]
+                        literaldataTypesNestNodes = ["double", "double"]
+                        createNestedNode(dictofNodeName, m2mcin['location']['coordinates'], "park:hasCoordinates", "park:hasLocation", semanticDescriptor, literaldataTypesNestNodes);
                     }
                 }
-            }
-            if (m2mcin.requiredPermit != undefined) {
-                // console.log("requiredPermit");
-                var ln = m2mcin['requiredPermit'].length;
-                clearNodes("park:hasRequiredPermit", semanticDescriptor);
-                createNode("park:hasRequiredPermit", semanticDescriptor, ln, "string", "park:OffStreetParking", true)
-                var nodes = semanticDescriptor.getElementsByTagName("park:hasRequiredPermit");
-                for (var i = 0; i < nodes.length; i++) {
-                    parseNode(nodes[i], semanticDescriptor, m2mcin['requiredPermit'][i])
+                if (m2mcin['availableSpotNumber'] != undefined) {
+                    var ln = m2mcin['availableSpotNumber'].length;
+                    clearNodes("park:hasAvailableSpotNumber", semanticDescriptor);
+                    var dictofNodeName = [["park:hasValueOfAvailableSpotNumber", "park:hasTimeStampOfAvailableSpotNumber"], [true, true]];
+                    var literaldataTypesNestNodes = ["string", "string"]
+                    for (var i = 0; i < ln; i++) {
+                        createNestedNode(dictofNodeName, m2mcin['availableSpotNumber'][i], "park:hasAvailableSpotNumber", "park:OffStreetParking", semanticDescriptor, literaldataTypesNestNodes);
+                    }
                 }
+                if (m2mcin['contactPoint'] != undefined) {
+                    if (typeof m2mcin["contactPoint"] != "string")
+                    {
+                        var ln = m2mcin['contactPoint'].length;
+                        clearNodes("park:hasContactPoint", semanticDescriptor);
+                        var dictofNodeName = [["park:hasTelePhone", "park:hasContactType", "hasContactOption", "hasAreaServed"], [true, true, true, true]];
+                        var literaldataTypesNestNodes = ["string", "string", "string", "string"]
+                        for (var i = 0; i < ln; i++)
+                        {
+                            var valuedict = [m2mcin['contactPoint'][i], "customer service", "TollFree", "US"]
+                            createNestedNode(dictofNodeName, valuedict, "park:hasContactPoint", "park:OffStreetParking", semanticDescriptor, literaldataTypesNestNodes);
+                        }
+                    }
+                    else
+                    {
+                        clearNodes("park:hasContactPoint", semanticDescriptor);
+                        var dictofNodeName = [["park:hasTelePhone", "park:hasContactType", "hasContactOption", "hasAreaServed"], [true, true, true, true]];
+                        var literaldataTypesNestNodes = ["string", "string", "string", "string"]
+                        var valuedict = [m2mcin['contactPoint'], "customer service", "TollFree", "US"]
+                        createNestedNode(dictofNodeName, valuedict, "park:hasContactPoint", "park:OffStreetParking", semanticDescriptor, literaldataTypesNestNodes);
+
+                    }
+
+                }
+                if (m2mcin['dateModified'] != undefined) {
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasDateModified")[0], semanticDescriptor, m2mcin['dateModified'])
+                }
+                if (m2mcin['openingHours'] != undefined) {
+
+                    parseNode(semanticDescriptor.getElementsByTagName("park:hasOpeningHours")[0], semanticDescriptor, m2mcin['openingHours'])
+                }
+                if (m2mcin['category'] != undefined)
+                {
+                    var ln = m2mcin['category'].length;
+                    clearNodes("park:hasCategory", semanticDescriptor);
+                    createNode("park:hasCategory", semanticDescriptor, ln, "string", "park:OffStreetParking", true)
+                    var nodes = semanticDescriptor.getElementsByTagName("park:hasCategory");
+                    for (var i = 0; i < nodes.length; i++) {
+                        parseNode(nodes[i], semanticDescriptor, m2mcin['category'][i])
+                    }
+                }
+                if (m2mcin['refParkingSite'] != undefined) {
+                    if (typeof m2mcin["refParkingSpot"] === "object") {
+                        var ln = m2mcin['refParkingSite'].length;
+                        clearNodes("park:hasRefParkingSite", semanticDescriptor);
+                        createNode("park:hasRefParkingSite", semanticDescriptor, ln, "string", "park:OffStreetParking", true)
+                        var nodes = semanticDescriptor.getElementsByTagName("park:hasRefParkingSite");
+                        for (var i = 0; i < nodes.length; i++) {
+                            parseNode(nodes[i], semanticDescriptor, m2mcin['refParkingSite'][i])
+                        }
+
+                    }
+                    else {
+                        clearNodes("park:hasRefParkingSite", semanticDescriptor);
+                        createNode("park:hasRefParkingSite", semanticDescriptor, 1, "string", "park:OffStreetParking", true)
+                        var nodes = semanticDescriptor.getElementsByTagName("park:hasRefParkingSite");
+                        parseNode(nodes[i], semanticDescriptor, m2mcin['refParkingSite'])
+                        var offStreetNode = semanticDescriptor.getElementsByTagName("park:OffStreetParking")[0];
+                        var newvalue = 'http://www.semanticweb.org/wise-iot/ontologies/2017/1/parkingOntology.owl#' + m2mcin['refParkingSite'];
+                        updatenodeAtrribute(offStreetNode, semanticDescriptor, "rdf:about", newvalue);
+                    }
+                }
+                if (m2mcin['aggregateRating'] != undefined)
+                {
+                    if (typeof m2mcin['aggregateRating'] != "object") {
+                        clearNodes("park:hasAggregatedRating", semanticDescriptor);
+                        var dictofNodeName = [["park:hasBestRating", "park:hasRatingValue", "park:hasRatingCount"], [true, true, true]];
+                        var literaldataTypesNestNodes = ["string", "string", "string"]
+                        var dictValue = ["", m2mcin['aggregateRating'], ""]
+                        createNestedNode(dictofNodeName, dictValue, "park:hasAggregatedRating", "park:OffStreetParking", semanticDescriptor, literaldataTypesNestNodes);
+
+                    }
+                    else {
+                        var ln = m2mcin['aggregateRating'].length;     //length of Aggregated String
+                        clearNodes("park:hasAggregatedRating", semanticDescriptor);
+                        var dictofNodeName = [["park:hasBestRating", "park:hasRatingValue", "park:hasRatingCount"], [true, true, true]];
+                        var literaldataTypesNestNodes = ["string", "string", "string"]
+                        for (var i = 0; i < ln; i++) {
+                            createNestedNode(dictofNodeName, m2mcin['aggregateRating'][i], "park:hasAggregatedRating", "park:OffStreetParking", semanticDescriptor, literaldataTypesNestNodes);
+                        }
+                    }
+                }
+                if (m2mcin['requiredPermit'] != undefined) {
+                    // console.log("requiredPermit");
+                    var ln = m2mcin['requiredPermit'].length;
+                    clearNodes("park:hasRequiredPermit", semanticDescriptor);
+                    createNode("park:hasRequiredPermit", semanticDescriptor, ln, "string", "park:OffStreetParking", true)
+                    var nodes = semanticDescriptor.getElementsByTagName("park:hasRequiredPermit");
+                    for (var i = 0; i < nodes.length; i++) {
+                        parseNode(nodes[i], semanticDescriptor, m2mcin['requiredPermit'][i])
+                    }
+                }
+                var newsmd = semanticDescriptor
+                var XMLSerializer = xmldom.XMLSerializer;
+                var newSD = new XMLSerializer().serializeToString(newsmd);
+                return newSD
             }
-            var newsmd = semanticDescriptor
-            var XMLSerializer = xmldom.XMLSerializer;
-            var newSD = new XMLSerializer().serializeToString(newsmd);
-            return newSD
+            else
+            {
+                return xmlDoc;
+            }
+
+
         }
-        else
+        else if(rootParent.toLowerCase()=="busstop") {
+            if(m2mcin.type !=undefined || m2mcin['id'] != undefined ||m2mcin.name != undefined  || m2mcin.refBuses != undefined || m2mcin['shortId'] != undefined
+                ||m2mcin['busStopCount'] != undefined  || m2mcin.address != undefined ||   m2mcin.location != undefined ||m2mcin.direction != undefined||
+                m2mcin.refBusLines != undefined ||m2mcin.dateModified != undefined)
+            {
+
+                if (m2mcin['name'] != undefined ) {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasName")[0], semanticDescriptor, m2mcin['name'])
+                }
+                if (m2mcin['id'] != undefined) {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasId")[0], semanticDescriptor, m2mcin['id'])
+                }
+                if (m2mcin['refBuses'] != undefined )
+                {
+                    var ln=m2mcin['refBuses'].length;
+                    clearNodes("smartBus:hasRefBuses",semanticDescriptor);
+                    createNode("smartBus:hasRefBuses",semanticDescriptor,ln,"string","smartBus:busStop",true)
+                    var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRefBuses");
+                    for(var i=0;i< nodes.length;i++)
+                    {
+                        parseNode(nodes[i],semanticDescriptor,m2mcin['refBuses'][i])
+                    }
+                }
+                if (m2mcin['shortId'] != undefined ) {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasShortId")[0], semanticDescriptor, m2mcin['shortID'])
+                }
+                if (m2mcin['busStopCount'] != undefined )
+                {
+                    var ln=m2mcin['busStopCount'].length;
+                    clearNodes("smartBus:hasBusStopCount",semanticDescriptor);
+                    createNode("smartBus:hasBusStopCount",semanticDescriptor,ln,"string","smartBus:busStop",true)
+                    var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasBusStopCount");
+                    for(var i=0;i< nodes.length;i++)
+                    {
+                        parseNode(nodes[i],semanticDescriptor,m2mcin['busStopCount'][i])
+                    }
+                }
+                if (m2mcin['location'] != undefined ) {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLatitude")[0], semanticDescriptor, m2mcin['location'][0])
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLongitude")[0], semanticDescriptor, m2mcin['location'][1])
+                }
+                if (m2mcin['address'] != undefined )
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasStreetAddress")[0], semanticDescriptor, m2mcin['address']['postalAddress']['streetAddress'])
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasAddressLocality")[0], semanticDescriptor, m2mcin['address']['postalAddress']['addressLocality'])
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasAddressRegion")[0], semanticDescriptor, m2mcin['address']['postalAddress']['addressRegion'])
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasPostalCode")[0], semanticDescriptor, m2mcin['address']['postalAddress']['postalCode'])
+
+                }
+                if (m2mcin['direction'] != undefined )
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDirection")[0], semanticDescriptor, m2mcin['direction'])
+                }
+                if (m2mcin['refBusLines'] != undefined )
+                {
+                    var ln=m2mcin['refBusLines'].length;
+                    clearNodes("smartBus:hasRefBusLines",semanticDescriptor);
+                    createNode("smartBus:hasRefBusLines",semanticDescriptor,ln,"string","smartBus:busStop",true)
+                    var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRefBusLines");
+                    for(var i=0;i< nodes.length;i++)
+                    {
+                        parseNode(nodes[i],semanticDescriptor,m2mcin['refBusLines'][i])
+                    }
+                }
+                if (m2mcin['dateModified'] != undefined ) {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDateModified")[0], semanticDescriptor, m2mcin['dateModified'])
+                }
+                var newsmd = semanticDescriptor
+                var XMLSerializer = xmldom.XMLSerializer;
+                var newSD = new XMLSerializer().serializeToString(newsmd);
+                return newSD
+            }
+            else
+            {
+                return xmlDoc
+            }
+
+
+        }
+        else if(rootParent.toLowerCase()=="busline") {
+            if(m2mcin.type !=undefined || m2mcin['id'] != undefined ||m2mcin.name != undefined  || m2mcin.refBuses != undefined || m2mcin['shortId'] != undefined
+                ||m2mcin['intervalHoli'] != undefined  || m2mcin.refStartBusStop != undefined ||   m2mcin.startTime != undefined ||m2mcin.endTime != undefined||
+                m2mcin.refBusStops != undefined ||m2mcin.dateModified != undefined || m2mcin.cin['intervalPeak'] != undefined
+                || m2mcin.cin['intervalNorm'] != undefined )
+            {
+                if (m2mcin['id'] != undefined)
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasId")[0], semanticDescriptor, m2mcin['id'])
+                }
+                if (m2mcin['refBusStops'] != undefined)
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRefBusStops")[0], semanticDescriptor, m2mcin['refBusStops'])
+                }
+                if (m2mcin['localId'] != undefined )
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLocalId")[0], semanticDescriptor, m2mcin['localId'])
+                }
+                if (m2mcin['shortId'] != undefined) {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasShortId")[0], semanticDescriptor, m2mcin['shortId'])
+                }
+                if (m2mcin['name'] != undefined)
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasName")[0], semanticDescriptor, m2mcin['name'])
+                }
+                if (m2mcin['refStartBusStop'] != undefined)
+                {
+                    var ln=m2mcin['refStartBusStop'].length;
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRefStartBusStop")[0], semanticDescriptor, m2mcin['refStartBusStop'])   //StartBusStops is an string composed of string array
+                }
+                if (m2mcin['refEndBusStop'] != undefined)
+                {
+
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRefEndBusStop")[0], semanticDescriptor, m2mcin['refEndBusStop']) //refEndBusStop is an string composed of string array
+                }
+                if (m2mcin['startTime'] != undefined )
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasStartTime")[0], semanticDescriptor, m2mcin['startTime'])
+                }
+                if (m2mcin['endTime'] != undefined)
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasEndTime")[0], semanticDescriptor, m2mcin['endTime'])
+                }
+                if (m2mcin['intervalNorm'] != undefined )
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasIntervalNorm")[0], semanticDescriptor, m2mcin['intervalNorm'])
+                }
+                if (m2mcin['intervalHoli'] != undefined )
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasIntervalHoli")[0], semanticDescriptor, m2mcin['intervalHoli'])
+                }
+                if (m2mcin['intervalPeak'] != undefined )
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasIntervalPeak")[0], semanticDescriptor, m2mcin['intervalPeak'])
+                }
+
+                if(m2mcin['datemodified'] != undefined )
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDateModified")[0], semanticDescriptor, m2mcin['dateModified'])
+                }
+                var newsmd = semanticDescriptor
+                var XMLSerializer = xmldom.XMLSerializer;
+                var newSD = new XMLSerializer().serializeToString(newsmd);
+                return newSD
+            }
+            else
+            {
+                return xmlDoc
+            }
+
+        }
+        else if(rootParent.toLowerCase()=="busestimation")
         {
+            if(m2mcin['id'] != undefined  || m2mcin.refBusStop != undefined || m2mcin['refBusLine'] != undefined
+                ||m2mcin['remainingDistances'] != undefined  || m2mcin.remainingTimes != undefined ||   m2mcin.shortId != undefined ||m2mcin.remainingStations != undefined||
+                m2mcin.companyName != undefined ||m2mcin.dateModified != undefined || m2mcin.cin['location'] != undefined)
+            {
+
+                if (m2mcin['name'] != undefined )
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasName")[0], semanticDescriptor, m2mcin['name'])
+                }
+                if (m2mcin['id'] != undefined )
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasId")[0], semanticDescriptor, m2mcin['id'])
+                }
+                if (m2mcin['refBusStop'] != undefined )
+                {
+                    var ln=m2mcin['refBusStop'].length;
+                    clearNodes("smartBus:hasRefBusStops",semanticDescriptor);
+                    createNode("smartBus:hasRefBusStops",semanticDescriptor,ln,"string","smartBus:busEstimation",true)
+                    var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRefBusStops");
+                    for(var i=0;i< nodes.length;i++)
+                    {
+                        parseNode(nodes[i],semanticDescriptor,m2mcin['refBusStops'][i])
+                    }
+                }
+                if (m2mcin['refBusLine'] != undefined )
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRefBusLine")[0], semanticDescriptor, m2mcin['refBusLine'])
+                }
+                if (m2mcin['remainingDistances'] != undefined )
+                {
+                    var ln=m2mcin['remainingDistances'].length;
+                    clearNodes("smartBus:hasRemainingDistances",semanticDescriptor);
+                    createNode("smartBus:hasRemainingDistances",semanticDescriptor,ln,"string","smartBus:busEstimation",true)
+                    var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRemainingDistances");
+                    for(var i=0;i< nodes.length;i++)
+                    {
+                        parseNode(nodes[i],semanticDescriptor,m2mcin['remainingDistances'][i])
+                    }
+                }
+
+                if (m2mcin['remainingTimes'] != undefined )
+                {
+                    var ln=m2mcin['remainingTimes'].length;
+                    clearNodes("smartBus:hasRemainingTimes",semanticDescriptor);
+                    createNode("smartBus:hasRemainingTimes",semanticDescriptor,ln,"string","smartBus:busEstimation",true)
+                    var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRemainingTimes");
+                    for(var i=0;i< nodes.length;i++)
+                    {
+                        parseNode(nodes[i],semanticDescriptor,m2mcin['remainingTimes'][i])
+                    }
+                }
+                if (m2mcin['destinationBusLines'] != undefined )
+                {
+                    var ln=m2mcin['destinationBusLines'].length;
+                    clearNodes("smartBus:hasDestinationBusLines",semanticDescriptor);
+                    createNode("smartBus:hasDestinationBusLines",semanticDescriptor,ln,"string","smartBus:busEstimation",true)
+                    var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasDestinationBusLines");
+                    for(var i=0;i< nodes.length;i++)
+                    {
+                        parseNode(nodes[i],semanticDescriptor,m2mcin['destinationBusLines'][i])
+                    }
+                }
+                if (m2mcin['shortId'] != undefined )
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasShortId")[0], semanticDescriptor, m2mcin['shortId'])
+                }
+                if (m2mcin['remainingStations'] != undefined ) {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRemainingStations")[0], semanticDescriptor, m2mcin['remainingStations'])
+                }
+                if (m2mcin['companyName'] != undefined ) {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasCompanyName")[0], semanticDescriptor, m2mcin['companyName'])
+                }
+                if (m2mcin['location'] != undefined )
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLatitude")[0], semanticDescriptor, m2mcin['location'][0])
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLongitude")[0], semanticDescriptor, m2mcin['location'][1])
+                }
+                if (m2mcin['dateModified'] != undefined )
+                {
+                    parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDateModified")[0], semanticDescriptor, m2mcin['dateModified'])
+                }
+                var newsmd = semanticDescriptor
+                var XMLSerializer = xmldom.XMLSerializer;
+                var newSD = new XMLSerializer().serializeToString(newsmd);
+                return newSD
+            }
+            else
+            {
+                return xmlDoc
+            }
+
+        }
+        else {
             return xmlDoc;
         }
 
-
     }
-    else if(rootParent.toLowerCase()=="busstop")
+    catch(error)
     {
-        if(m2mcin.type !=undefined || m2mcin['id'] != undefined ||m2mcin.name != undefined  || m2mcin.refBuses != undefined || m2mcin['shortId'] != undefined
-            ||m2mcin['busStopCount'] != undefined  || m2mcin.address != undefined ||   m2mcin.location != undefined ||m2mcin.direction != undefined||
-            m2mcin.refBusLines != undefined ||m2mcin.dateModified != undefined)
-        {
-
-            if (m2mcin.name != undefined ) {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasName")[0], semanticDescriptor, m2mcin['name'])
-            }
-            if (m2mcin['id'] != undefined) {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasId")[0], semanticDescriptor, m2mcin['id'])
-            }
-            if (m2mcin['refBuses'] != undefined )
-            {
-                var ln=m2mcin['refBuses'].length;
-                clearNodes("smartBus:hasRefBuses",semanticDescriptor);
-                createNode("smartBus:hasRefBuses",semanticDescriptor,ln,"string","smartBus:busStop",true)
-                var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRefBuses");
-                for(var i=0;i< nodes.length;i++)
-                {
-                    parseNode(nodes[i],semanticDescriptor,m2mcin['refBuses'][i])
-                }
-            }
-            if (m2mcin['shortId'] != undefined ) {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasShortId")[0], semanticDescriptor, m2mcin['shortID'])
-            }
-            if (m2mcin['busStopCount'] != undefined )
-            {
-                var ln=m2mcin['busStopCount'].length;
-                clearNodes("smartBus:hasBusStopCount",semanticDescriptor);
-                createNode("smartBus:hasBusStopCount",semanticDescriptor,ln,"string","smartBus:busStop",true)
-                var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasBusStopCount");
-                for(var i=0;i< nodes.length;i++)
-                {
-                    parseNode(nodes[i],semanticDescriptor,m2mcin['busStopCount'][i])
-                }
-            }
-            if (m2mcin['location'] != undefined ) {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLatitude")[0], semanticDescriptor, m2mcin['location'][0])
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLongitude")[0], semanticDescriptor, m2mcin['location'][1])
-            }
-            if (m2mcin['address'] != undefined )
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasStreetAddress")[0], semanticDescriptor, m2mcin['address']['postalAddress']['streetAddress'])
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasAddressLocality")[0], semanticDescriptor, m2mcin['address']['postalAddress']['addressLocality'])
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasAddressRegion")[0], semanticDescriptor, m2mcin['address']['postalAddress']['addressRegion'])
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasPostalCode")[0], semanticDescriptor, m2mcin['address']['postalAddress']['postalCode'])
-
-            }
-            if (m2mcin['direction'] != undefined )
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDirection")[0], semanticDescriptor, m2mcin['direction'])
-            }
-            if (m2mcin['refBusLines'] != undefined )
-            {
-                var ln=m2mcin['refBusLines'].length;
-                clearNodes("smartBus:hasRefBusLines",semanticDescriptor);
-                createNode("smartBus:hasRefBusLines",semanticDescriptor,ln,"string","smartBus:busStop",true)
-                var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRefBusLines");
-                for(var i=0;i< nodes.length;i++)
-                {
-                    parseNode(nodes[i],semanticDescriptor,m2mcin['refBusLines'][i])
-                }
-            }
-            if (m2mcin.dateModified != undefined ) {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDateModified")[0], semanticDescriptor, m2mcin['dateModified'])
-            }
-            var newsmd = semanticDescriptor
-            var XMLSerializer = xmldom.XMLSerializer;
-            var newSD = new XMLSerializer().serializeToString(newsmd);
-            return newSD
-        }
-        else
-        {
-            return xmlDoc
-        }
-
-
-    }
-    else if(rootParent.toLowerCase()=="busline")
-    {
-        if(m2mcin.type !=undefined || m2mcin['id'] != undefined ||m2mcin.name != undefined  || m2mcin.refBuses != undefined || m2mcin['shortId'] != undefined
-            ||m2mcin['intervalHoli'] != undefined  || m2mcin.refStartBusStop != undefined ||   m2mcin.startTime != undefined ||m2mcin.endTime != undefined||
-            m2mcin.refBusStops != undefined ||m2mcin.dateModified != undefined || m2mcin.cin['intervalPeak'] != undefined
-            || m2mcin.cin['intervalNorm'] != undefined )
-        {
-            if (m2mcin['id'] != undefined)
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasId")[0], semanticDescriptor, m2mcin['id'])
-            }
-            if (m2mcin['refBusStops'] != undefined)
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRefBusStops")[0], semanticDescriptor, m2mcin['refBusStops'])
-            }
-            if (m2mcin['localId'] != undefined )
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLocalId")[0], semanticDescriptor, m2mcin['localId'])
-            }
-            if (m2mcin['shortId'] != undefined) {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasShortId")[0], semanticDescriptor, m2mcin['shortId'])
-            }
-            if (m2mcin['name'] != undefined)
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasName")[0], semanticDescriptor, m2mcin['name'])
-            }
-            if (m2mcin['refStartBusStop'] != undefined)
-            {
-                var ln=m2mcin['refStartBusStop'].length;
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRefStartBusStop")[0], semanticDescriptor, m2mcin['refStartBusStop'])   //StartBusStops is an string composed of string array
-            }
-            if (m2mcin['refEndBusStop'] != undefined)
-            {
-
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRefEndBusStop")[0], semanticDescriptor, m2mcin['refEndBusStop']) //refEndBusStop is an string composed of string array
-            }
-            if (m2mcin['startTime'] != undefined )
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasStartTime")[0], semanticDescriptor, m2mcin['startTime'])
-            }
-            if (m2mcin['endTime'] != undefined)
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasEndTime")[0], semanticDescriptor, m2mcin['endTime'])
-            }
-            if (m2mcin['intervalNorm'] != undefined )
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasIntervalNorm")[0], semanticDescriptor, m2mcin['intervalNorm'])
-            }
-            if (m2mcin['intervalHoli'] != undefined )
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasIntervalHoli")[0], semanticDescriptor, m2mcin['intervalHoli'])
-            }
-            if (m2mcin['intervalPeak'] != undefined )
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasIntervalPeak")[0], semanticDescriptor, m2mcin['intervalPeak'])
-            }
-
-            if(m2mcin.datemodified != undefined )
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDateModified")[0], semanticDescriptor, m2mcin['dateModified'])
-            }
-            var newsmd = semanticDescriptor
-            var XMLSerializer = xmldom.XMLSerializer;
-            var newSD = new XMLSerializer().serializeToString(newsmd);
-            return newSD
-        }
-        else
-        {
-            return xmlDoc
-        }
-
-    }
-    else if(rootParent.toLowerCase()=="busestimation")
-    {
-        if(m2mcin['id'] != undefined  || m2mcin.refBusStop != undefined || m2mcin['refBusLine'] != undefined
-            ||m2mcin['remainingDistances'] != undefined  || m2mcin.remainingTimes != undefined ||   m2mcin.shortId != undefined ||m2mcin.remainingStations != undefined||
-            m2mcin.companyName != undefined ||m2mcin.dateModified != undefined || m2mcin.cin['location'] != undefined)
-        {
-
-            if (m2mcin['name'] != undefined )
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasName")[0], semanticDescriptor, m2mcin['name'])
-            }
-            if (m2mcin['id'] != undefined )
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasId")[0], semanticDescriptor, m2mcin['id'])
-            }
-            if (m2mcin['refBusStop'] != undefined )
-            {
-                var ln=m2mcin['refBusStop'].length;
-                clearNodes("smartBus:hasRefBusStops",semanticDescriptor);
-                createNode("smartBus:hasRefBusStops",semanticDescriptor,ln,"string","smartBus:busEstimation",true)
-                var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRefBusStops");
-                for(var i=0;i< nodes.length;i++)
-                {
-                    parseNode(nodes[i],semanticDescriptor,m2mcin['refBusStops'][i])
-                }
-            }
-            if (m2mcin['refBusLine'] != undefined )
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRefBusLine")[0], semanticDescriptor, m2mcin['refBusLine'])
-            }
-            if (m2mcin['remainingDistances'] != undefined )
-            {
-                var ln=m2mcin['remainingDistances'].length;
-                clearNodes("smartBus:hasRemainingDistances",semanticDescriptor);
-                createNode("smartBus:hasRemainingDistances",semanticDescriptor,ln,"string","smartBus:busEstimation",true)
-                var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRemainingDistances");
-                for(var i=0;i< nodes.length;i++)
-                {
-                    parseNode(nodes[i],semanticDescriptor,m2mcin['remainingDistances'][i])
-                }
-            }
-
-            if (m2mcin['remainingTimes'] != undefined )
-            {
-                var ln=m2mcin['remainingTimes'].length;
-                clearNodes("smartBus:hasRemainingTimes",semanticDescriptor);
-                createNode("smartBus:hasRemainingTimes",semanticDescriptor,ln,"string","smartBus:busEstimation",true)
-                var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasRemainingTimes");
-                for(var i=0;i< nodes.length;i++)
-                {
-                    parseNode(nodes[i],semanticDescriptor,m2mcin['remainingTimes'][i])
-                }
-            }
-            if (m2mcin['destinationBusLines'] != undefined )
-            {
-                var ln=m2mcin['destinationBusLines'].length;
-                clearNodes("smartBus:hasDestinationBusLines",semanticDescriptor);
-                createNode("smartBus:hasDestinationBusLines",semanticDescriptor,ln,"string","smartBus:busEstimation",true)
-                var nodes=semanticDescriptor.getElementsByTagName("smartBus:hasDestinationBusLines");
-                for(var i=0;i< nodes.length;i++)
-                {
-                    parseNode(nodes[i],semanticDescriptor,m2mcin['destinationBusLines'][i])
-                }
-            }
-            if (m2mcin['shortId'] != undefined )
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasShortId")[0], semanticDescriptor, m2mcin['shortId'])
-            }
-            if (m2mcin['remainingStations'] != undefined ) {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasRemainingStations")[0], semanticDescriptor, m2mcin['remainingStations'])
-            }
-            if (m2mcin['companyName'] != undefined ) {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasCompanyName")[0], semanticDescriptor, m2mcin['companyName'])
-            }
-            if (m2mcin['location'] != undefined )
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLatitude")[0], semanticDescriptor, m2mcin['location'][0])
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasLongitude")[0], semanticDescriptor, m2mcin['location'][1])
-            }
-            if (m2mcin['dateModified'] != undefined )
-            {
-                parseNode(semanticDescriptor.getElementsByTagName("smartBus:hasDateModified")[0], semanticDescriptor, m2mcin['dateModified'])
-            }
-            var newsmd = semanticDescriptor
-            var XMLSerializer = xmldom.XMLSerializer;
-            var newSD = new XMLSerializer().serializeToString(newsmd);
-            return newSD
-        }
-        else
-        {
-            return xmlDoc
-        }
-
-    }
-    else
-    {
-
-        return xmlDoc;
+        console.log(error)
     }
 
 }
@@ -1094,16 +1098,27 @@ function testJSON(text){
         return false;
     }
 }
-var dictToArray=function (obj,keyflag) {
+var dictToArray=function (obj,keyflag)
+{
     var arr=[];
     for (var key in obj)
     {
-        if (obj.hasOwnProperty(key)) {
-            if (keyflag==true)
+        if (obj.hasOwnProperty(key))
+        {
+            if (keyflag=='y')
+            {
+                arr.push(key);
+                arr.push(obj[key]);
+            }
+            else if(keyflag=='n')
+            {
+                arr.push(obj[key]);
+            }
+            else if(keyflag=='b')
             {
                 arr.push(key);
             }
-            arr.push(obj[key]);
+
         }
     }
     return arr;
@@ -1111,18 +1126,24 @@ var dictToArray=function (obj,keyflag) {
 }
 var parseNode=function(stem,xmlDoc,m2mcin)
 {
+
     var  node=stem;
     if (node)
     {
 
         var textNode = node.childNodes[0];
+
         if (!textNode)
         {
             textNode = xmlDoc.createTextNode("");
             node.appendChild(textNode);
         }
+
         textNode.nodeValue = m2mcin;
         textNode.data = m2mcin.toString();
+        //console.log(node)
+        console.log(m2mcin );
+
     }
     else
     {
@@ -1156,25 +1177,35 @@ var  createNestedNode =function(dictofNodeName,valueDict,parentNode,rootNode,xml
     var structure=dataStructureFile.rdfTypeScheme;
     var node=xmldoc.getElementsByTagName(rootNode)[0];
     var  parentelement = xmldoc.createElement(parentNode)
+
     if(parentelement)
     {
-        for(var i=0;i<dictofNodeName[0].length;i++)
-        {
-            var item=dictofNodeName[0][i];
-            var flag=dictofNodeName[1][i];
-            var  element = xmldoc.createElement(item.toString())
-            if (element!=undefined && flag==true)
+        try {
+            for(var i=0;i<dictofNodeName[0].length;i++)
             {
-                var  textNode = xmldoc.createTextNode("");
-                element.appendChild(textNode);
-                var att = xmldoc.createAttribute(structure.type);       // Create a "class" attribute
-                att.value = structure.values[literaldataType[i]];              // Set the value of the class attribute
-                element.setAttributeNode(att)
-                parentelement.appendChild(element);
-                parseNode(element,xmldoc,valueDict[i])
+                var item=dictofNodeName[0][i];
+                var flag=dictofNodeName[1][i];
+                console.log(item+"="+valueDict[i])
+                var  element = xmldoc.createElement(item.toString())
+                if (element!=undefined && flag==true)
+                {
+                    var  textNode = xmldoc.createTextNode("");
+                    element.appendChild(textNode);
+                    var att = xmldoc.createAttribute(structure.type);       // Create a "class" attribute
+                    att.value = structure.values[literaldataType[i]];              // Set the value of the class attribute
+                    element.setAttributeNode(att)
+                    parentelement.appendChild(element);
+                    parseNode(element,xmldoc,valueDict[i])
+                }
             }
+            xmldoc.getElementsByTagName(rootNode)[0].appendChild(parentelement);
         }
-        xmldoc.getElementsByTagName(rootNode)[0].appendChild(parentelement);
+        catch (error)
+        {
+            console.log(error)
+        }
+
+
     }
 }
 var clearNodes=function (name,xmlDoc)
@@ -1182,13 +1213,13 @@ var clearNodes=function (name,xmlDoc)
     var ln=xmlDoc.getElementsByTagName(name).length;
     var node=xmlDoc.getElementsByTagName(name);
     for(var i=0;i<ln;i++)
+    {
+        var root=node[i];
+        if (root)
         {
-            var root=node[i];
-            if (root)
-            {
-                root.parentNode.removeChild(root);
-            }
+            root.parentNode.removeChild(root);
         }
+    }
 }
 var removeWhitespace=function(xml)
 {
@@ -1374,43 +1405,28 @@ var splitResourceArray=function (array) {
     }
     return newArray
 }
-var mobiusMqttsubscribe=function (temp)
+var mobiusMqttsubscribe=function (rn)
 {
-    var notificationUrl = "mqtt://"+mqttBroker+temp.replace(csebase,'')+"?ct=json";
-    api.checkResourcesubscription(temp, function (aes)
+    var notificationUrl = "mqtt://"+mqttBroker+'/'+mqtt_topic;
+    api.checkResourcesubscription(rn, function (aes)
     {
-        // console.log('subscription of '+temp+'=',aes['m2m:sub']);
-        // var subscriptionExists=false;
-        // if (aes['m2m:sub']!=undefined) {
-        //    for(var i=0;i<aes['m2m:sub'].length;i++) {
-        //        var each_sub=aes['m2m:sub'][i];
-        //        if(each_sub['nu'] != undefined) {
-        //            for(var j=0;j<each_sub['nu'].length;j++) {
-        //                var each_nu = each_sub['nu'][j];
-        //                if(each_nu===notificationUrl) {
-        //                    console.log('Subscription exists with notification URL <'+notificationUrl+'>');
-        //                    subscriptionExists=true;
-        //                    break;
-        //                }
-        //            }
-        //        }
-        //        if(subscriptionExists) {
-        //            break;
-        //        }
-        //    }
-        //}
         var subscriptionExists = (aes['m2m:sub']!==undefined);
-        if(!subscriptionExists) {
-            console.log('Subscription created with notification URL <'+notificationUrl+'>');
-            api.Resourcesubscription(temp, function (sub) {
-                    mqtt.subscibeTopic(temp.replace(csebase,''));
-                })
-        } else {
-            mqtt.subscibeTopic(temp.replace(csebase,''));
+        if(!subscriptionExists)
+        {
+            console.log('Subscription created with notification URL <'+notificationUrl+'>')
+            api.Resourcesubscription(rn, function (sub)
+            {
+                console.log('sub='+sub);
+               //mqtt.subscibeTopic();
+            })
+        }
+        else
+        {
+             //mqtt.subscibeTopic();
         }
     })
 }
-module.exports.mobiusMqttsubscription=mobiusMqttsubscribe
+module.exports.csesubscription=mobiusMqttsubscribe
 module.exports.splitArray=splitResourceArray
 module.exports.notificationHandling=notif
 
