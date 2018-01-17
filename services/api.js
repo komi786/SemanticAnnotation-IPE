@@ -227,7 +227,10 @@ module.exports.checkResourceAnnotation = function (rn, callback)
 module.exports.checkResourcesubscription = function (rn, callback)
 {
     var containerName = '/'+rn.replace(" ",'')+'/'+sub
+<<<<<<< HEAD
   //  console.log(containerName)
+=======
+>>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
     var AEs='';
     var http = require('http');
     var options = {

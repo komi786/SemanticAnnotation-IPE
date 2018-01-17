@@ -8,10 +8,19 @@ var util=require('util');
 var dataStructureFile=require('./dataStructure');
 var notif=function (parentResourcePath)
 {
+<<<<<<< HEAD
     var notificationContent=parentResourcePath['pc']['m2m:sgn'];
     if (notificationContent && notificationContent['net']==3)
     {
         console.log("Notification =",notificationContent);
+=======
+    var notificationContent=message['pc']['m2m:sgn'];
+    // Only consider new resource creations
+    if (notificationContent && notificationContent['net']==3)
+    {
+        console.log("Notification =",notificationContent);
+        var resourceName=getParentResourcePath(notificationContent['sur']);
+>>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
         if (notificationContent['nev']['rep']['m2m:cnt'])   //Notif--New container have been created--Subscribe CNT--Make MQTT subscription
         {
             var newcnt = notificationContent['nev']['rep']['m2m:cnt'];
@@ -20,10 +29,10 @@ var notif=function (parentResourcePath)
             {
                 if(cnt["m2m:cnt"])
                 {
-                    console.log('Create container notification',fullresourceName);
+                    console.log('Create new container subscription',fullresourceName);
                     api.Resourcesubscription(fullresourceName, function (response)
                     {
-                        api.doTopicSubscription(fullresourceName)
+                        api.doTopicSubscription(fullresourceName.replace(csebase,''))
                     })
                 }
 
@@ -32,7 +41,14 @@ var notif=function (parentResourcePath)
         }
         else if(notificationContent['nev']['rep']['m2m:cin'])                //Notif--New contentInstance have been created. parse SMD and Update
         {
+            var newcin=notificationContent['nev']['rep']['m2m:cin'];
+            
+            var resourceNameSplit=resourceName.split('/');
+            var subscriptionresourceName=resourceNameSplit[resourceNameSplit.length-1];
+            var prn=resourceNameSplit[3];
+            var parentResourcePath=getParentResourcePath(resourceName);
 
+<<<<<<< HEAD
             var newcin=notificationContent['nev']['rep']['m2m:cin'];
             var resourceNameSplit=resourceName.split('/');
             var subscriptionresourceName=resourceNameSplit[resourceNameSplit.length-1];
@@ -48,11 +64,17 @@ var notif=function (parentResourcePath)
             // var smdURI=rootparent.replace(smdminus,'');
             // smdminus='/'+rootparentsplit[rootparentsplit.length-1];
             // rootparent=rootparent.replace(smdminus,'');
+=======
+>>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
             if(prn.toLowerCase()=="parkingspot")
             {
                 if (subscriptionresourceName=="info")
                 {
                     createDescription(newcin,prn,parentResourcePath);
+<<<<<<< HEAD
+=======
+
+>>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
                     var statusrootparent=parentResourcePath+'/status';
                     api.latestcin(statusrootparent,function (res)
                     {
@@ -60,23 +82,25 @@ var notif=function (parentResourcePath)
                         {
                             createDescription(res['m2m:cin'],prn,parentResourcePath)
                         }
-
-
                     })
                 }
                 else if(subscriptionresourceName=="status")
                 {
                     createDescription(newcin,prn,parentResourcePath);
+<<<<<<< HEAD
 
                     var inforootparent=rootparent.replace(subscriptionresourceName,'info');
+=======
+>>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
 
+                    var inforootparent=parentResourcePath+'/info';
                     api.latestcin(inforootparent,function (res)
                     {
                         if(res['m2m:dbg']==undefined)
                         {
                             var resm2mcin=JSON.parse(res['m2m:cin']['con']);
                             res['m2m:cin']['con']=resm2mcin
-                            createDescription(res['m2m:cin'], prn, smdURI);
+                            createDescription(res['m2m:cin'],prn,parentResourcePath);
                         }
 
                     })
@@ -84,9 +108,9 @@ var notif=function (parentResourcePath)
             }
             else if(prn.toLowerCase()=="offstreetparking")
             {
-               // var smdprnresource=rootparent.replace(rootparentsplit[rootparentsplit.length-1],'');
                 if (subscriptionresourceName=="info")
                 {
+<<<<<<< HEAD
 
                     createDescription(newcin,prn,parentResourcePath);
                     var availableSpotNumrootparent=rootparent.replace(subscriptionresourceName,'availableSpotNum');
@@ -94,19 +118,28 @@ var notif=function (parentResourcePath)
                     {
                         if(res['m2m:dbg']==undefined) {
                             createDescription(res['m2m:cin'], prn,parentResourcePath)
-                        }
-                    })
-                    var aggregateRatingrootparent=rootparent.replace(subscriptionresourceName,'aggregateRating');
+=======
+                    createDescription(newcin,prn,parentResourcePath);
+                    var availableSpotNumrootparent=parentResourcePath+'/availableSpotNum';
                     api.latestcin(availableSpotNumrootparent,function (res)
                     {
                         if(res['m2m:dbg']==undefined) {
-                            createDescription(res['m2m:cin'],prn, smdURI)
+                            createDescription(res['m2m:cin'],prn,parentResourcePath)
+>>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
+                        }
+                    })
+                    var aggregateRatingrootparent=parentResourcePath+'/aggregateRating';
+                    api.latestcin(aggregateRatingrootparent,function (res)
+                    {
+                        if(res['m2m:dbg']==undefined) {
+                            createDescription(res['m2m:cin'],prn,parentResourcePath)
                         }
                     })
 
                 }
                 else if(subscriptionresourceName=="availableSpotNum")
                 {
+<<<<<<< HEAD
                     // var parentResource=retrivalParentResourceURI(parentResourcePath['pc']['m2m:sgn']['sur'])
                     createDescription(newcin,prn,parentResourcePath);
                     var inforootparent=rootparent.replace(subscriptionresourceName,'info');
@@ -114,31 +147,55 @@ var notif=function (parentResourcePath)
                     {
                         if(res['m2m:dbg']==undefined) {
                             createDescription(res['m2m:cin'], prn,parentResourcePath)
-                        }
-                    })
-                    var aggregateRatingrootparent=rootparent.replace(subscriptionresourceName,'aggregateRating');
-                    api.latestcin(availableSpotNumrootparent,function (res)
+=======
+                    createDescription(newcin,prn,parentResourcePath);
+                    var inforootparent=parentResourcePath+'/info';
+                    api.latestcin(inforootparent,function (res)
                     {
                         if(res['m2m:dbg']==undefined) {
+                            createDescription(res['m2m:cin'],prn,parentResourcePath)
+>>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
+                        }
+                    })
+                    var aggregateRatingrootparent=parentResourcePath+'/aggregateRating';
+                    api.latestcin(aggregateRatingrootparent,function (res)
+                    {
+                        if(res['m2m:dbg']==undefined) {
+<<<<<<< HEAD
                             createDescription(res['m2m:cin'], prn,parentResourcePath)
+=======
+                            createDescription(res['m2m:cin'],prn,parentResourcePath)
+>>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
                         }
                     })
                 }
                 else if(subscriptionresourceName=="aggregateRating")
                 {
                     createDescription(newcin,prn,parentResourcePath);
+<<<<<<< HEAD
                     var inforootparent=rootparent.replace(subscriptionresourceName,'info');
                     api.latestcin(inforootparent,function (res)
                     {
                         if(res['m2m:dbg']==undefined) {
                             createDescription(res['m2m:cin'], prn,parentResourcePath)
+=======
+                    var inforootparent=parentResourcePath+'/info';
+                    api.latestcin(inforootparent,function (res)
+                    {
+                        if(res['m2m:dbg']==undefined) {
+                            createDescription(res['m2m:cin'],prn,parentResourcePath)
+>>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
                         }
                     })
-                    var availableSpotNumrootparent=rootparent.replace(subscriptionresourceName,'availableSpotNum');
+                    var availableSpotNumrootparent=parentResourcePath+'/availableSpotNum';
                     api.latestcin(availableSpotNumrootparent,function (res)
                     {
                         if(res['m2m:dbg']==undefined) {
+<<<<<<< HEAD
                             createDescription(res['m2m:cin'], prn,parentResourcePath)
+=======
+                            createDescription(res['m2m:cin'],prn,parentResourcePath)
+>>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
                         }
                     })
                 }
@@ -151,14 +208,22 @@ var notif=function (parentResourcePath)
             {
                 if (subscriptionresourceName=="info")
                 {
+<<<<<<< HEAD
 
                     createDescription(newcin,prn,rootparent);
                     var availableSpotNumrootparent=rootparent.replace(subscriptionresourceName,'availableSpotNum');
+=======
+                    createDescription(newcin,prn,parentResourcePath);
+                    var availableSpotNumrootparent=parentResourcePath+'/availableSpotNum';
+>>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
                     api.latestcin(availableSpotNumrootparent,function (res)
                     {
                         if(res['m2m:dbg']==undefined)
                         {
+<<<<<<< HEAD
 
+=======
+>>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
                             createDescription(res['m2m:cin'],prn,parentResourcePath)
                         }
                     })
@@ -167,11 +232,18 @@ var notif=function (parentResourcePath)
                 else if(subscriptionresourceName=="availableSpotNum")
                 {
                     createDescription(newcin,prn,parentResourcePath);
+<<<<<<< HEAD
                     var inforootparent=rootparent.replace(subscriptionresourceName,'info');
                     api.latestcin(inforootparent,function (res)
                     {
                         if(res['m2m:dbg']==undefined) {
 
+=======
+                    var inforootparent=parentResourcePath+'/info';
+                    api.latestcin(inforootparent,function (res)
+                    {
+                        if(res['m2m:dbg']==undefined) {
+>>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
                             createDescription(res['m2m:cin'], prn,parentResourcePath)
                         }
                     })
@@ -180,13 +252,35 @@ var notif=function (parentResourcePath)
 
 
         }
+<<<<<<< HEAD
+=======
+        // else if(notificationContent['nev']['rep']['m2m:sub'])
+        // { //since CSE returns the latest subscription resource rn in case of more than one subscription rather then particular
+            //deleted m2m:sub rn---It is not possible to check whether rn exist and need to subscription of container parent or not)
+        //     console.log(resourcePath);
+        //     // api.checkcontainerExist(fullresourceName,function (cnt)
+        //     // {
+        //     //
+        //     //     if(cnt["m2m:cnt"])
+        //     //     {
+        //     //         console.log('Create container notification',fullresourceName);
+        //     //         api.Resourcesubscription(fullresourceName, function (response)
+        //     //         {
+        //     //             api.doTopicSubscription(fullresourceName)
+        //     //         })
+        //     //     }
+        //     //
+        //     // })
+        //     var res=resourceName.split("/").join("+");
+        //     api.doTopicSubscription(res)
+        //     return
+        // }
+>>>>>>> 51042596f92e698ae5b79327bf1e617590f824a3
 
     }
 }
 var createDescription=function (cin,rpn,smdprnresource)
 {
-   // smdprnresource=smdprnresource.replace((smdprnresource.split('/')[smdprnresource.split('/').length-1]+"/"),'');
-
     api.semanticDescription(smdprnresource,function (str)
     {
         var data=JSON.parse(str);
@@ -227,22 +321,9 @@ var createDescription=function (cin,rpn,smdprnresource)
         }
     })
 }
-var retrivalParentResourceURI=function(prn)
+var getParentResourcePath=function(sur)
 {
-    var rootparent=prn
-    var rootparentsplit=rootparent.split('/');
-    var subscriptionresourceName='/'+rootparentsplit[rootparentsplit.length-2]
-    rootparent=rootparent.replace(subscriptionresourceName,'');
-    var RootParent=rootparent.split('/')[3];
-    return RootParent;
-}
-var getNewResourcePath=function(sur,rn)
-{
-    var sur1=sur
-    var rootparentsplit=sur1.split('/');
-    var subscriptionresourceName='/'+rootparentsplit[rootparentsplit.length-1]
-    sur1=sur1.replace(subscriptionresourceName,'');
-    return sur1;
+    return sur.replace(/\/[^/]+$/g,'')
 }
 function squash(arr)
 {
@@ -1295,53 +1376,37 @@ var splitResourceArray=function (array) {
 }
 var mobiusMqttsubscribe=function (temp)
 {
+    var notificationUrl = "mqtt://"+mqttBroker+temp.replace(csebase,'')+"?ct=json";
     api.checkResourcesubscription(temp, function (aes)
     {
-
-        console.log('subscription of '+temp+'=',aes['m2m:sub']);
-        if (aes['m2m:sub']==undefined)
-        {
-
-            api.Resourcesubscription(temp, function (sub)
-            {
-                console.log('For '+temp+' AESattributes= ',sub);
-                temp=temp.replace(csebase,'')
-                mqtt.subscibeTopic(temp);
-            })
-        }
-        else
-        {
-
-            temp=temp.replace(csebase,'')
-            mqtt.subscibeTopic(temp);
-            // var checksub=false
-            // console.log('sub-t',aes['m2m:sub'].length);
-            // for(var i=0;i<aes['m2m:sub'].length;i++)
-            // {
-            //     var t=aes['m2m:sub'][i];
-            //
-            //     if(t['nu'] != undefined)
-            //     {
-            //         var nu=JSON.stringify(t['nu'])
-            //
-            //         if(nu.indexOf(serverIP)>=0)
-            //         {
-            //             console.log('notification URL=',nu);
-            //             checksub=true;
-            //             temp=temp.replace(csebase,'')
-            //             mqtt.subscibeTopic(temp);
-            //             break;
-            //         }
-            //     }
-            // }
-            // if(checksub==false)
-            // {
-            //     api.Resourcesubscription(temp, function (sub)
-            //     {
-
-              //  })
-
-          //  }
+        // console.log('subscription of '+temp+'=',aes['m2m:sub']);
+        // var subscriptionExists=false;
+        // if (aes['m2m:sub']!=undefined) {
+        //    for(var i=0;i<aes['m2m:sub'].length;i++) {
+        //        var each_sub=aes['m2m:sub'][i];
+        //        if(each_sub['nu'] != undefined) {
+        //            for(var j=0;j<each_sub['nu'].length;j++) {
+        //                var each_nu = each_sub['nu'][j];
+        //                if(each_nu===notificationUrl) {
+        //                    console.log('Subscription exists with notification URL <'+notificationUrl+'>');
+        //                    subscriptionExists=true;
+        //                    break;
+        //                }
+        //            }
+        //        }
+        //        if(subscriptionExists) {
+        //            break;
+        //        }
+        //    }
+        //}
+        var subscriptionExists = (aes['m2m:sub']!==undefined);
+        if(!subscriptionExists) {
+            console.log('Subscription created with notification URL <'+notificationUrl+'>');
+            api.Resourcesubscription(temp, function (sub) {
+                    mqtt.subscibeTopic(temp.replace(csebase,''));
+                })
+        } else {
+            mqtt.subscibeTopic(temp.replace(csebase,''));
         }
     })
 }
