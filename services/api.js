@@ -72,8 +72,7 @@ module.exports.Resourcesubscription = function (rn, callback)
 {
        var cse='/'+csebase;
        var containerName = "/"+rn;
-       var newtopic=containerName.split(cse);
-        newtopic=newtopic.join('');
+       var newtopic=containerName.replace(cse,'');
         var request = require('request');
         request.post({
         headers:  {
@@ -229,7 +228,6 @@ module.exports.checkResourceAnnotation = function (rn, callback)
 module.exports.checkResourcesubscription = function (rn, callback)
 {
     var containerName = '/'+rn.replace(" ",'')+'/'+sub
-    console.log(containerName)
     var AEs='';
     var http = require('http');
     var options = {

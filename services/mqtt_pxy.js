@@ -23,14 +23,15 @@ var options = {
     rejectUnauthorized: false,
 }
 var client = mqtt.connect(host);
+var mqttsubRootPath='/oneM2M/req/' + cseid.replace(/^\//,'');
 client.on('connect', function ()
 {
     console.log('--pxy_mqtt--',mqttBroker);
 });
 var mqttsub= function (topic)
 {
-   console.log("subscription of Resource=",'/oneM2M/req/'+cseid+topic+"/json");
-   client.subscribe('/oneM2M/req'+cseid+topic+"/json")
+    console.log("Subscribing to mqtt queue ["+mqttsubRootPath+topic+"/json]");
+    client.subscribe(mqttsubRootPath+topic+"/json")
 }
 client.on('message', function (topic, message)
 {
