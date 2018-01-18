@@ -71,8 +71,8 @@ module.exports.cnt = function (rn,callback)
 module.exports.Resourcesubscription = function (rn, callback)
 {
        // var cse='/'+csebase;
-    var containerName = "/"+rn;
-       // var newtopic=containerName.replace(cse,'');
+
+        var containerName=(rn.charAt(0)=='/')? rn:'/'+rn;
         var request = require('request');
         request.post({
         headers:  {

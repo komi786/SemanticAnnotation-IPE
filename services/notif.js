@@ -18,19 +18,17 @@ var notif=function (parentResourcePath)
             {
                 var newcnt = notificationContent['nev']['rep']['m2m:cnt'];
                 var fullresourceName = resourceName + '/' + newcnt['rn'];
-                api.checkcontainerExist(fullresourceName,function (cnt)
+                api.Resourcesubscription(fullresourceName, function (response)
                 {
-                    if(cnt["m2m:cnt"])
+                    var subscription_response=JSON.parse(response)
+
+                    if(subscription_response['m2m:sub'])
                     {
-                        console.log('Create new container subscription',fullresourceName);
-                        api.Resourcesubscription(fullresourceName, function (response)
-                        {
-                            api.doTopicSubscription()
-                        })
+                        console.log('<--'+fullresourceName+ ' subscribed sucessfully--->');
+                        api.doTopicSubscription()
                     }
 
                 })
-
             }
             else if(notificationContent['nev']['rep']['m2m:cin'])                //Notif--New contentInstance have been created. parse SMD and Update
             {
