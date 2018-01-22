@@ -40,7 +40,6 @@ app.get('/annotateResource/*',function(req,res)  //Subscribe Target entity and i
                         var temp = item.toString()
                         var splititem = temp.split('/');
                         service.csesubscription(temp);
-
                         next();
                     }, function (response, error)
                     {
@@ -62,7 +61,9 @@ app.get('/annotateResource/*',function(req,res)  //Subscribe Target entity and i
     }
     catch (error)
     {
+
         console.log(error)
+
     }
 
 })
@@ -72,7 +73,7 @@ if(process.env.NODE_ENV !== 'n') {
         console.error(err.stack||err);
         setTimeout(function(){
             process.exit(1);
-        }, 100);
+        }, 1000);
     });
 }
 app.listen(3000);

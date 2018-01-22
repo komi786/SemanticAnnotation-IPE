@@ -390,7 +390,8 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                         var newvalue = 'http://www.semanticweb.org/wise-iot/ontologies/2017/1/parkingOntology.owl#' + m2mcin['refParkingSite'][0];
                         updatenodeAtrribute(ParkingSpot, semanticDescriptor, "rdf:about", newvalue);
                     }
-                    else {
+                    else
+                    {
                         clearNodes("park:hasRefParkingSite", semanticDescriptor);
                         createNode("park:hasRefParkingSite", semanticDescriptor, 1, "string", "park:ParkingSpot", true)
                         parseNode(semanticDescriptor.getElementsByTagName("park:hasRefParkingSite")[0], semanticDescriptor, m2mcin['refParkingSite'])
@@ -600,15 +601,13 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                     clearNodes("park:hasPermiteActiveHours", semanticDescriptor);
                     var dictofNodeName = [["park:hasPropertyName", "park:hasPropertyValue"], [true, true]];
                     var literaldataTypesNestNodes = ["string", "string"]
-                    if ( typeof m2mcin['permitActiveHours']=="object") {
-                        var keys = dictToArray(m2mcin['permitActiveHours'], 'b');
-                        var values = dictToArray(m2mcin['permitActiveHours'], 'n');
-
-                        for (var i = 0; i < keys.length; i++)
+                    if ( typeof m2mcin['permitActiveHours']=="object")
+                    {
+                        for (var i = 0; i < ln; i++)
                         {
-                            var pactivehours=[];
-                            pactivehours.push(keys[i])
-                            pactivehours.push(values[i])
+                            var pactivehours=dictToArray(m2mcin['permitActiveHours'][i], 'y');
+                            // pactivehours.push(keys[i])
+                            // pactivehours.push(values[i])
                             console.log('permitActiveHours=',pactivehours)
                             createNestedNode(dictofNodeName, pactivehours, "park:hasPermiteActiveHours", "park:OnStreetParking", semanticDescriptor, literaldataTypesNestNodes);
                         }

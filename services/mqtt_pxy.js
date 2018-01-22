@@ -6,7 +6,7 @@ const mqtt=require('mqtt');
 var config  = require('../configFile');
 var service=require('./notif')
 var host='mqtt://'+mqttBroker;
-var oneM2MResPath='/oneM2M/req/'
+var oneM2MResPath='/oneM2M/req/+'
 var client = mqtt.connect(host);
 client.on('connect', function ()
 {
