@@ -18,14 +18,16 @@ app.get('/annotateResource/*',function(req,res)  //Subscribe Target entity and i
 
     try {
         tempaeid=tempaeid.slice(1,tempaeid.length);
-        if (rn.includes('/') )
+        if (rn.includes('/'))
         {
+
             global.cnt = tempaeid[0];
             api.cnt(subcnt, function (response)
             {
                 var m2mresources = JSON.parse(response)
                 if (m2mresources['m2m:dbg'] == undefined)
                 {
+                    console.log('<------>')
                     var itemsProcessed = 0;
                     var uris = m2mresources["m2m:uril"];
                     var resource = uris.toString();

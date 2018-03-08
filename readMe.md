@@ -1,5 +1,5 @@
 Semantic Annotator 
-Semantic annotator is a web component that supports annotation of oneM2M resource in Mobius Server Platform. It currently supports smart parking use case only.
+Semantic annotator is a web component that supports annotation of oneM2M resource in Mobius Server Platform. It currently supports smart parking and bus information system use case only.
 
 #######################################################
 Run commmand: node annotator

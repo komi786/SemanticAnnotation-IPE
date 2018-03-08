@@ -10,7 +10,7 @@ var notif=function (parentResourcePath)
 {
     var notificationContent=parentResourcePath['pc']['m2m:sgn'];
     try {
-        if (notificationContent && (notificationContent['net']==3 || notificationContent['net']==4 ))
+        if (notificationContent && (notificationContent['net']==3 || notificationContent['net']==4))
         {
             console.log("Notification =",notificationContent);
             var resourceName=getParentResourcePath(notificationContent['sur']);
@@ -187,6 +187,14 @@ var createDescription=function (cin,rpn,smdprnresource)
                     var newSD=ParsingSDFILE(cin,rpn,sd);
                     if(newSD.toString()!=sd.toString())
                     {
+                        api.Resourcesubscription(smdprnresource+'/'+smd,function (res)
+                        {
+                            if(res['m2m:smd'])
+                            {
+                                console.log(res['m2m:smd']['rn']+' is subscribed')
+                            }
+
+                        })
                         newSD=Base64.encode(newSD);
                         var form={'rn':smdprnresource,'dspt':newSD};
                         api.UpdateResourceAnnotation(form,function (res)
@@ -214,12 +222,22 @@ var createDescription=function (cin,rpn,smdprnresource)
                 var form = {'rn': smdprnresource, 'dsp': Base64.encode(dspt) };
                 api.ResourceAnnotation(form, function (response)
                 {
+
                     var res=JSON.parse(response)
                     if(res['m2m:smd'])
                     {
 
+
                         if(res['m2m:smd']['dsp'])
                         {
+                            api.Resourcesubscription(smdprnresource+'/'+smd,function (res) {
+                                if(res['m2m:smd'])
+                                {
+                                    console.log(res['m2m:smd']['rn']+' is subscribed')
+                                }
+
+
+                            })
                             var sd=res['m2m:smd']['dsp'];
                             sd= Base64.decode(sd);
                             var newSD=ParsingSDFILE(cin,rpn,sd);
@@ -595,8 +613,6 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                 }
                 if (m2mcin['permitActiveHours'] != undefined)                         //make rdf/xml class type for permitActiveHours sensor information
                 {
-
-
                     var ln = m2mcin['permitActiveHours'].length;
                     clearNodes("park:hasPermiteActiveHours", semanticDescriptor);
                     var dictofNodeName = [["park:hasPropertyName", "park:hasPropertyValue"], [true, true]];
@@ -606,8 +622,6 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                         for (var i = 0; i < ln; i++)
                         {
                             var pactivehours=dictToArray(m2mcin['permitActiveHours'][i], 'y');
-                            // pactivehours.push(keys[i])
-                            // pactivehours.push(values[i])
                             console.log('permitActiveHours=',pactivehours)
                             createNestedNode(dictofNodeName, pactivehours, "park:hasPermiteActiveHours", "park:OnStreetParking", semanticDescriptor, literaldataTypesNestNodes);
                         }
@@ -1427,6 +1441,7 @@ var mobiusMqttsubscribe=function (rn)
         }
         else
         {
+            console.log('sub='+aes['m2m:sub']);
              //mqtt.subscibeTopic();
         }
     })

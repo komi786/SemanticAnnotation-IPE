@@ -86,7 +86,7 @@ module.exports.Resourcesubscription = function (rn, callback)
             JSON.stringify({"m2m:sub":
                 {
                     "enc": {
-                        "net": [3, 4]
+                        "net": [3]
                     },
                     "nu":["mqtt://"+mqttBroker+'/'+mqtt_topic + '?ct=json'],
                     "nct": 2,
