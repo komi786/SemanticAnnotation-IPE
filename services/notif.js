@@ -58,9 +58,10 @@ var notif=function (parentResourcePath)
                         var inforootparent=parentResourcePath+'/info';
                         api.latestcin(inforootparent,function (res)
                         {
-                            if(res['m2m:dbg']==undefined)
+                            console.log('---cin--',res)
+                            if(res['m2m:cin']!=undefined)
                             {
-                                var resm2mcin=JSON.parse(res['m2m:cin']['con']);
+                                var resm2mcin=res['m2m:cin']['con'];
                                 res['m2m:cin']['con']=resm2mcin
                                 createDescription(res['m2m:cin'],prn,parentResourcePath);
                             }
@@ -175,6 +176,7 @@ var createDescription=function (cin,rpn,smdprnresource)
 
     api.semanticDescription(smdprnresource,function (str)
     {
+        console.log('str--',str)
         var data=JSON.parse(str);
         if (data['m2m:smd'])
         {
@@ -223,7 +225,8 @@ var createDescription=function (cin,rpn,smdprnresource)
                 api.ResourceAnnotation(form, function (response)
                 {
 
-                    var res=JSON.parse(response)
+
+                     var res=response
                     if(res['m2m:smd'])
                     {
 
@@ -341,8 +344,10 @@ function ParsingSDFILE(cinObject,rootParent,document) {
     var resourceName = cinObject.rn.toLowerCase(); //getting out rn
     // var m2mcin = cinObject.con; //getting out cin
     try {
+        console.log('rootObject=',rootParent)
         if (rootParent.toLowerCase() == "parkingspot")
         {
+
             if(m2mcin.type !=undefined || m2mcin['id'] != undefined ||m2mcin.name != undefined  || m2mcin.dateModified != undefined || m2mcin['category'] != undefined
                 ||m2mcin['status'] != undefined  || m2mcin.refParkingSite != undefined ||   m2mcin.location != undefined)
             {
@@ -687,11 +692,13 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                     parseNode(semanticDescriptor.getElementsByTagName("park:hasId")[0], semanticDescriptor, m2mcin['id'])
                 }
                 if (m2mcin['type'] != undefined) {
+                    console.log("type");
                     parseNode(semanticDescriptor.getElementsByTagName("park:hasType")[0], semanticDescriptor, m2mcin['type'])
 
                 }
                 if (m2mcin['refParkingSpot'] != undefined)
                 {
+                    console.log("refParkingSpot");
                     if (typeof m2mcin["refParkingSpot"] === "object")
                     {
                         var ln = m2mcin['refParkingSpot'].length;
@@ -720,6 +727,7 @@ function ParsingSDFILE(cinObject,rootParent,document) {
 
                 }
                 if (m2mcin['location'] != undefined) {
+                    console.log("location");
                     var ln = m2mcin['location']['coordinates'].length;
                     clearNodes("park:hasCoordinates", semanticDescriptor);
                     // createNode("park:hasLocation",semanticDescriptor,1,"string","park:OffStreetParking",false)
@@ -741,6 +749,7 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                     }
                 }
                 if (m2mcin['availableSpotNumber'] != undefined) {
+                    console.log("availableSpotNumber");
                     var ln = m2mcin['availableSpotNumber'].length;
                     clearNodes("park:hasAvailableSpotNumber", semanticDescriptor);
                     var dictofNodeName = [["park:hasValueOfAvailableSpotNumber", "park:hasTimeStampOfAvailableSpotNumber"], [true, true]];
@@ -750,6 +759,7 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                     }
                 }
                 if (m2mcin['contactPoint'] != undefined) {
+                    console.log("contactPoint");
                     if (typeof m2mcin["contactPoint"] != "string")
                     {
                         var ln = m2mcin['contactPoint'].length;
@@ -774,14 +784,17 @@ function ParsingSDFILE(cinObject,rootParent,document) {
 
                 }
                 if (m2mcin['dateModified'] != undefined) {
+                    console.log("dateModified");
                     parseNode(semanticDescriptor.getElementsByTagName("park:hasDateModified")[0], semanticDescriptor,m2mcin_ct)
                 }
-                if (m2mcin['openingHours'] != undefined) {
-
+                if (m2mcin['openingHours'] != undefined)
+                {
+                    console.log("openingHours");
                     parseNode(semanticDescriptor.getElementsByTagName("park:hasOpeningHours")[0], semanticDescriptor, m2mcin['openingHours'])
                 }
                 if (m2mcin['category'] != undefined)
                 {
+                    console.log("category");
                     var ln = m2mcin['category'].length;
                     clearNodes("park:hasCategory", semanticDescriptor);
                     createNode("park:hasCategory", semanticDescriptor, ln, "string", "park:OffStreetParking", true)
@@ -791,6 +804,7 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                     }
                 }
                 if (m2mcin['refParkingSite'] != undefined) {
+                    console.log("refParkingSite");
                     if (typeof m2mcin["refParkingSpot"] === "object") {
                         var ln = m2mcin['refParkingSite'].length;
                         clearNodes("park:hasRefParkingSite", semanticDescriptor);
@@ -813,7 +827,9 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                 }
                 if (m2mcin['aggregateRating'] != undefined)
                 {
+                    console.log("aggregateRating");
                     if (typeof m2mcin['aggregateRating'] != "object") {
+
                         clearNodes("park:hasAggregatedRating", semanticDescriptor);
                         var dictofNodeName = [["park:hasBestRating", "park:hasRatingValue", "park:hasRatingCount"], [true, true, true]];
                         var literaldataTypesNestNodes = ["string", "string", "string"]
@@ -822,7 +838,8 @@ function ParsingSDFILE(cinObject,rootParent,document) {
 
                     }
                     else {
-                        var ln = m2mcin['aggregateRating'].length;     //length of Aggregated String
+                        var ln = m2mcin['aggregateRating'].length;
+                        //length of Aggregated String
                         clearNodes("park:hasAggregatedRating", semanticDescriptor);
                         var dictofNodeName = [["park:hasBestRating", "park:hasRatingValue", "park:hasRatingCount"], [true, true, true]];
                         var literaldataTypesNestNodes = ["string", "string", "string"]
@@ -832,7 +849,7 @@ function ParsingSDFILE(cinObject,rootParent,document) {
                     }
                 }
                 if (m2mcin['requiredPermit'] != undefined) {
-                    // console.log("requiredPermit");
+                    console.log("requiredPermit");
                     var ln = m2mcin['requiredPermit'].length;
                     clearNodes("park:hasRequiredPermit", semanticDescriptor);
                     createNode("park:hasRequiredPermit", semanticDescriptor, ln, "string", "park:OffStreetParking", true)

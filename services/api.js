@@ -30,6 +30,7 @@ module.exports.semanticDescription = function (rn,callback)
         });
         res.on('end', function ()
         {
+            console.log('semanticDescription--')
             return callback(str);
         });
     });
@@ -58,6 +59,7 @@ module.exports.cnt = function (rn,callback)
                 str += body;
             });
             res.on('end', function () {
+                console.log('cnt--')
                 return callback(str);
             });
         });
@@ -96,6 +98,7 @@ module.exports.Resourcesubscription = function (rn, callback)
 
     },function(error, response, body)
     {
+        console.log('---Resourcesubscription--')
         callback(body);
     });
 };
@@ -124,6 +127,7 @@ module.exports.ResourceAnnotation = function (req, callback)
 
     },function(error, response, body)
     {
+        console.log('---ResourceAnnotation--')
         callback(body);
     });
 };
@@ -151,8 +155,17 @@ module.exports.checkcontainerExist = function (rn, callback)
         });
         response.on('end', function()
         {
-            AEs=JSON.parse(AEs)
-            return callback(AEs);
+
+            try {
+                console.log('checkcontainerExist')
+                return callback(AEs);
+            }
+            catch(error)
+            {
+                console.log(error)
+                return callback(AEs);
+            }
+
         });
 
     });
@@ -187,8 +200,16 @@ module.exports.UpdateResourceAnnotation = function (body, callback)
 
     },function(error, response, body)
     {
-        var obj = JSON.parse(body);
-        callback(body)
+        try {
+            console.log('UpdateResourceAnnotation_body--',body)
+            callback(body)
+        }
+        catch(error)
+        {
+            console.log(error)
+            callback(body)
+        }
+
     });
 };
 module.exports.checkResourceAnnotation = function (rn, callback)
@@ -215,6 +236,7 @@ module.exports.checkResourceAnnotation = function (rn, callback)
         });
         response.on('end', function()
         {
+            console.log('checkResourceAnnotation')
             callback(AEs);
         });
 
@@ -250,8 +272,17 @@ module.exports.checkResourcesubscription = function (rn, callback)
         });
         response.on('end', function()
         {
-            AEs=JSON.parse(AEs)
-            callback(AEs);
+            try {
+                console.log('checkResourcesubscription')
+                AEs=JSON.parse(AEs)
+                callback(AEs);
+            }
+            catch(error)
+            {
+                console.log(error)
+                callback(AEs)
+            }
+
         });
 
     });
@@ -297,8 +328,16 @@ module.exports.latestcin = function (rn,callback)
             str += body;
         });
         res.on('end', function () {
-            str=JSON.parse(str)
-            return callback(str);
+            try {
+
+                return callback(str);
+            }
+            catch(error)
+            {
+                console.log(error)
+                return callback(str);
+            }
+
         });
     });
     req.end();
